@@ -1,0 +1,20 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "bitfinex_test",
+            "program": "${workspaceFolder}/build_Debug/bitfinex_test/bitfinex_test",
+            "args": [
+                "s", "1"
+            ],
+            "preLaunchTask": "build_debug",
+            "cwd": "${workspaceFolder}",
+            "setupCommands": [
+                {"ignoreFailures": true, "text": "source ${workspaceFolder}/.gdbinit"},
+                {"ignoreFailures": true, "text": "-enable-pretty-printing"},
+            ],
+            "stopAtEntry": false, "externalConsole": false, "request": "launch",
+            "miDebuggerPath": "/usr/bin/gdb", "type": "cppdbg", "MIMode": "gdb",
+        },
+    ],
+}
