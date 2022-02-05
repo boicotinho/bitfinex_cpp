@@ -20,7 +20,8 @@
             "cppStandard" : "c++11",
             "cStandard": "c11",
             "intelliSenseMode": "linux-gcc-x64",  // ${default}
-            "compileCommands": "${default}"
+            "compileCommands": "${default}",
+            "configurationProvider": "ms-vscode.cmake-tools",
         }
     ],
     "version": 4
