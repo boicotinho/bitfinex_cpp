@@ -13,6 +13,7 @@ add_executable( ${PROJECT_NAME}
     ut_main.cpp
     ut_synchronous_hitbtc.cpp
     ut_synchronous_bitfinex.cpp
+    #test_async_echo.cpp # prototype app with its own main() and command line
 )
 target_link_libraries( ${PROJECT_NAME}
                       ${Boost_FILESYSTEM_LIBRARY}
