@@ -10,6 +10,9 @@ file (GLOB HEADER_FILES *.h)
 add_executable( ${PROJECT_NAME}
     #${SOURCE_FILES}
     ut_basics.cpp
+    ut_main.cpp
+    ut_synchronous_hitbtc.cpp
+    ut_synchronous_bitfinex.cpp
 )
 target_link_libraries( ${PROJECT_NAME}
                       ${Boost_FILESYSTEM_LIBRARY}

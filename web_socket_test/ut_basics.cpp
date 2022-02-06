@@ -11,7 +11,7 @@ BOOST_AUTO_TEST_CASE(simple_tls_request)
 
 BOOST_AUTO_TEST_SUITE_END()
 */
-
+/*
 #define USE_REAL_CERTIFICATES 0
 
 #include <boost/version.hpp> // 1.76
@@ -262,12 +262,11 @@ int main(int argc, char** argv)
     auto port = "443";
     auto hshk = "/ws/2"; // "/ws/2" // '/' for echo server
     auto text = R"({ "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" })"; // JSON-RPC request
-    /*
-    auto host = "websocket-echo.com";
-    auto port = "443";
-    auto hshk = "/";
-    auto text = "MyWebSocketTest";
-    */
+
+    // auto host = "websocket-echo.com";
+    // auto port = "443";
+    // auto hshk = "/";
+    // auto text = "MyWebSocketTest";
 
     // Check command line arguments.
     //if(argc != 4)
@@ -315,3 +314,4 @@ int main(int argc, char** argv)
 
     return EXIT_SUCCESS;
 }
+*/
