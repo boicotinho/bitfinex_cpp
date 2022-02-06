@@ -15,3 +15,5 @@ add_compile_options(
 
 add_subdirectory(bitfinex)
 add_subdirectory(bitfinex_test)
+
+add_subdirectory(web_socket_test)

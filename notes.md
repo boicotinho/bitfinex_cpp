@@ -1,7 +1,25 @@
+# tools
+
+sudo yum install -y npm
+sudo npm install -g wscat
+
+sudo yum install -y openssl-devel
+
+wscat -c wss://api-pub.bitfinex.com/ws/2
+{ "event": "subscribe", "channel": "book", "prec": "R0", "symbol": "tBTCUSD" }
+
+wscat -c wss://api-pub.bitfinex.com/ws/2
+{ "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" }
+
 # Current TOB, to check real data against
 
 https://www.bitfinex.com/
 
+BTC/USD
+Price: integer e.g. 41625. Price tick = 1 USD
+Ammount: the total sum of quantity (BTC, a fixed-point vale) only at this price level
+Total: cumulative quantity from this price level to top of book
+Count: number of orders at this price level only
 
 # BOOKS
 
@@ -18,6 +36,17 @@ https://bitfinex.readthedocs.io/en/latest/websocket.html#wssclient-with-examples
 # C++ WebSockets example
 
 https://stackoverflow.com/questions/69051106/c-or-c-websocket-client-working-example
+
+Header-only but also uses asio:
+https://github.com/zaphoyd/websocketpp
+A bit thick framework, might be hard to do asynchronous, define your own buffers and allocations, etc
+Users can't make the important decisions such as buffer or thread management.
+
+// Stand-alon boost/beast?
+https://github.com/boostorg/beast
+
+// No boost dependency, simple, SSL, but forces a threading framework
+https://github.com/machinezone/IXWebSocket
 
 // asynchronous / synchronous
 https://www.boost.org/doc/libs/develop/libs/beast/doc/html/beast/examples.html
