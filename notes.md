@@ -1,9 +1,25 @@
-# tools
+# boost / asio / beast / openssl
+
+//Centos:        sudo yum install -y openssl-devel
+//Ubuntu/Debian: sudo apt install libssl-dev
+
+I had boost 1.76 installed on my centos8
+
+git clone --recursive https://github.com/boostorg/boost.git   # 28 minutes
+cd boost
+./bootstrap.sh --prefix=/home/fabio/dev/dist/ # 22 seconds
+./b2 # 2 minutes
+
+      --prefix=/home/fabio/dev/dist/
+  include dir: /home/fabio/dev/boost
+  lib dir:     /home/fabio/dev/boost/stage/lib
+
+./b2 install
+
+# wscat, TOB
 
 sudo yum install -y npm
 sudo npm install -g wscat
-
-sudo yum install -y openssl-devel
 
 wscat -c wss://api-pub.bitfinex.com/ws/2
 { "event": "subscribe", "channel": "book", "prec": "R0", "symbol": "tBTCUSD" }
@@ -12,6 +28,8 @@ wscat -c wss://api-pub.bitfinex.com/ws/2
 { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" }
 
 # Current TOB, to check real data against
+
+Bitfinex Websocket API version is 2.0
 
 https://www.bitfinex.com/
 
@@ -51,6 +69,10 @@ https://github.com/machinezone/IXWebSocket
 // asynchronous / synchronous
 https://www.boost.org/doc/libs/develop/libs/beast/doc/html/beast/examples.html
 https://www.boost.org/doc/libs/develop/libs/beast/example/websocket/client/sync-ssl/websocket_client_sync_ssl.cpp
+
+    root_certificates.hpp : better use this certificate chain validator:
+    https://stackoverflow.com/questions/49507407/using-boost-beast-asio-http-client-with-ssl-https
+
 
 # Order book initial state
 

@@ -5,6 +5,8 @@
             "includePath":[
                 "${workspaceFolder}",
                 "${default}",
+                "/usr/local/include",
+                "/usr/include",
             ],
             "defines": [
                 "BUILD_TYPE=\"Debug\"",
