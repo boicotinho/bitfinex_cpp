@@ -1,6 +1,6 @@
 #include "test_utils.h"
 #include "bitfinex/order_book_p.h"
-#include "bitfinex/profile_utils.h"
+#include "core/profile_utils.h"
 
 
 BOOST_AUTO_TEST_SUITE(bitfinex)

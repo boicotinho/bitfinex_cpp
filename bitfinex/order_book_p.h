@@ -1,6 +1,6 @@
 #pragma once
-#include "types.h"
-#include "gcc_utils.h"
+#include "bitfinex/types.h"
+#include "core/gcc_utils.h"
 #include <cstdint>
 #include <string>
 #include <cmath>

@@ -1,8 +1,8 @@
 #pragma once
-#include "order_book_p.h"
-#include "order_book_r.h"
-#include "types.h"
-#include "gcc_utils.h"
+#include "bitfinex/order_book_p.h"
+#include "bitfinex/order_book_r.h"
+#include "bitfinex/types.h"
+#include "core/gcc_utils.h"
 #include <cstdint>
 #include <string>
 #include <vector>

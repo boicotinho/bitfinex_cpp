@@ -1,5 +1,5 @@
 #include "test_utils.h"
-#include "bitfinex/profile_utils.h"
+#include "core/profile_utils.h"
 
 #include <boost/container/flat_map.hpp>
 #include <functional>
