@@ -3,6 +3,8 @@
 #include <cmath>
 #include <vector>
 #include <string>
+#include <boost/version.hpp>
+#include <boost/container/flat_map.hpp>
 
 int f1(int x);
 
@@ -62,6 +64,9 @@ namespace level_based
     // https://docs.bitfinex.com/reference#ws-public-books
     class OrderBookSideP // Ask or Bid side. Level-based OB
     {
+        using LevelMap = boost::container::flat_map<px_t, qx_t>; // ordered
+        LevelMap    m_level_map; 
+        PxQx        m_last_update {}; // optimization
     public:
         void clear();
 
@@ -100,17 +105,17 @@ namespace level_based
 
 } // level_based
 
-namespace order_based
-{
-    using px_t = float;
-    class OrderBookSideR // Raw order book, i.e. Order-based OB
-    {
-        void clear();
-        void update_(px_t price_level, qx_t new_qty);
-        void erase_level(px_t price_level);
-        void get_tob(uint32_t offset);
-    };
-} // namespace order_based
+// namespace order_based
+// {
+//     using px_t = float;
+//     class OrderBookSideR // Raw order book, i.e. Order-based OB
+//     {
+//         void clear();
+//         void update_(px_t price_level, qx_t new_qty);
+//         void erase_level(px_t price_level);
+//         void get_tob(uint32_t offset);
+//     };
+// } // namespace order_based
 
 
 struct SubscriptionArgs
