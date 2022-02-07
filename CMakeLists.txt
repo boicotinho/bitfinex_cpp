@@ -13,6 +13,8 @@ add_compile_options(
     -Werror -Werror=return-type
 )
 
+include_directories(SYSTEM .)
+
 add_subdirectory(core)
 add_subdirectory(bitfinex)
 add_subdirectory(bitfinex_test)
