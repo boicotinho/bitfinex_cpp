@@ -17,10 +17,23 @@ FORCE_INLINE CpuTimeStamp rdtscp()
     return res;
 }
 
-// Returns a string with timings table that looks like the below.
-// cc stands for clock cycles and us for microseconds.
+// Returns a string with timings table.
+// 
+// Argument a_cc_timings is a vector of timestamp diffs captured with rdtscp().
+// E.g.
 //
-//  Perf 1,000,000 x Echo thread read time
+//  vector<CpuTimeStamp> ts;
+//  for(int ii = 0; ii < 1000; ii++) {
+//      auto t0 = rdtscp();
+//      my_code();
+//      auto t1 = rdtscp();
+//      ts.push_back(t1 - t0);
+//  }
+//  cout << FormatCcTimingsTable(ts, "MyCode");
+//
+//  output (cc stands for CPU clock cycles):
+//
+//  Perf 1,000 x MyCode
 //      0.0 % :          162 cc 
 //     10.0 % :          170 cc 
 //     50.0 % :          196 cc 

@@ -1,13 +1,11 @@
-#include <boost/test/unit_test.hpp>
+#include "test_utils.h"
+#include "bitfinex/profile_utils.h"
+
 #include <boost/container/flat_map.hpp>
 #include <functional>
 #include <map>
 
-#include "test_utils.h"
-#include "bitfinex/profile_utils.h"
-
 namespace utf = boost::unit_test;
-namespace tt = boost::test_tools;
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 
@@ -32,6 +30,12 @@ BOOST_AUTO_TEST_CASE(book_map_bid, * utf::tolerance(0.00001f))
     BOOST_CHECK_EQUAL(map[32], 3.2f);
     BOOST_CHECK_EQUAL(map[11], 1.1f);
     BOOST_CHECK_EQUAL(map[44], 0.44f);
+
+    // Random access, e.g. TOP-of-book index 2 (third best price)
+    auto it = map.begin();
+    std::advance(it, 2);
+    BOOST_CHECK_EQUAL(it->first, 44);
+    BOOST_CHECK_EQUAL(it->second, 0.44f);
 }
 
 BOOST_AUTO_TEST_CASE(book_map_ask, * utf::tolerance(0.00001f))
@@ -53,6 +57,12 @@ BOOST_AUTO_TEST_CASE(book_map_ask, * utf::tolerance(0.00001f))
     BOOST_CHECK_EQUAL(map[11], 1.1f);
     BOOST_CHECK_EQUAL(map[44], 0.44f);
     
+    // Random access, e.g. TOP-of-book index 2 (third best price)
+    auto it = map.begin();
+    std::advance(it, 2);
+    BOOST_CHECK_EQUAL(it->first, 11);
+    BOOST_CHECK_EQUAL(it->second, 1.1f);
+
     map.erase(32);
     BOOST_CHECK_EQUAL(map.count(32), 0);
     BOOST_CHECK_EQUAL(map[11], 1.1f);

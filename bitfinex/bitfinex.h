@@ -1,12 +1,11 @@
 #pragma once
+#include "order_book_p.h"
+#include "order_book_r.h"
+#include "types.h"
+#include "gcc_utils.h"
 #include <cstdint>
-#include <cmath>
-#include <vector>
 #include <string>
-#include <boost/version.hpp>
-#include <boost/container/flat_map.hpp>
-
-int f1(int x);
+#include <vector>
 
 // https://docs.bitfinex.com/reference#ws-public-books
 // wscat -c wss://api-pub.bitfinex.com/ws/2
@@ -40,85 +39,7 @@ int f1(int x);
 namespace bitfenix
 {
 
-using channel_tag_t = uint64_t; // Not necessarily parsed, might just the original channelId raw string, e.g. '[100838,'
-using qx_t          = float;
-
-enum eSide
-{
-    BID = 0,
-    ASK = 1
-};
-
-inline constexpr eSide qx_to_side(qx_t qq) {return qq < 0 ? eSide::ASK : eSide::BID;}
-
-namespace level_based
-{
-    using px_t = uint32_t;
-
-    struct PxQx
-    {
-        px_t price_level;
-        qx_t total_qty;
-    };
-
-    // https://docs.bitfinex.com/reference#ws-public-books
-    class OrderBookSideP // Ask or Bid side. Level-based OB
-    {
-        using LevelMap = boost::container::flat_map<px_t, qx_t>; // ordered
-        LevelMap    m_level_map; 
-        PxQx        m_last_update {}; // optimization
-    public:
-        void clear();
-
-        // Overwrites previous quantity at price level
-        // new_qty should be a value > 0, regardless of ask/bid
-        void assign_level(px_t price_level, qx_t new_qty);
-        void erase_level(px_t price_level);
-
-        PxQx get_tob(uint32_t offset);
-    };
-
-
-    class OrderBookP
-    {
-        OrderBookSideP m_book_sides[2];
-    public:
-        void clear()
-            {
-            m_book_sides[eSide::BID].clear();
-            m_book_sides[eSide::ASK].clear();
-            }
-        void assign_level(px_t price_level, qx_t new_qty)
-            {
-            const auto side = qx_to_side(new_qty);
-            m_book_sides[side].assign_level(price_level, std::fabs(new_qty) );
-            }
-        void erase_level(px_t price_level, eSide side)
-            {
-            m_book_sides[side].erase_level(price_level);
-            }
-        PxQx get_tob(eSide side, uint32_t offset)
-            {
-            m_book_sides[side].get_tob(offset);
-            }
-    };
-
-} // level_based
-
-// namespace order_based
-// {
-//     using px_t = float;
-//     class OrderBookSideR // Raw order book, i.e. Order-based OB
-//     {
-//         void clear();
-//         void update_(px_t price_level, qx_t new_qty);
-//         void erase_level(px_t price_level);
-//         void get_tob(uint32_t offset);
-//     };
-// } // namespace order_based
-
-
-struct SubscriptionArgs
+struct SubscriptionConfig
 {
     std::string symbol    {"tBTCUSD"};
     std::string precision {"P0"};  // *P0,...,P4 price aggregation. P0 is 5 significant digits, P4 is just 1 digit
@@ -128,6 +49,9 @@ struct SubscriptionArgs
 
     // { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD", "prec": "P0", "len": "250", "subId":"999" }
     std::string as_json_rpc_request() const;
+
+    // Supplied once subscribed at the exchange
+    std::string channelId;
 };
 
 // Intended for use by one WebSocket connection, multiple subscriptions
@@ -136,8 +60,11 @@ class MarketDataFeed
     // Open-address hash, channel_tag_t -> index
     std::vector<level_based::OrderBookP> m_books;
 public:
-    void subscribe(const SubscriptionArgs&);
+    void subscribe(SubscriptionConfig&);
+    void unsubscribe(SubscriptionConfig&);
 };
 
 
 } // namespace bitfenix
+
+int f1(int x);
