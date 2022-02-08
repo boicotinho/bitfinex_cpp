@@ -15,6 +15,13 @@
 #include <stddef.h>
 #include <x86intrin.h>
 
+// TODO:    1) Test UT in AVX2 laptop 
+//          2) Put DenseMap in class
+//          3) If AVX2 not enabled (march=native), then use normal unordered map, maybe flat version of it
+//          4) Profile test
+//
+//          5) Finish up Listening class
+
 #pragma GCC diagnostic ignored "-Wignored-attributes"
 
 #define THROW_CERR(EXPR) do { std::stringstream ss; ss << EXPR; throw std::runtime_error(ss.str()); } while(0)
