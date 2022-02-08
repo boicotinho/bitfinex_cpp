@@ -15,6 +15,8 @@
 #include <stddef.h>
 #include <x86intrin.h>
 
+#pragma GCC diagnostic ignored "-Wignored-attributes"
+
 #define THROW_CERR(EXPR) do { std::stringstream ss; ss << EXPR; throw std::runtime_error(ss.str()); } while(0)
 
 struct ExampleTraits__DenseIndex_and_Map
@@ -149,15 +151,16 @@ public: // Helpers
             const Key* const end = &(m_keys[NUM_VREGS-NUM_SPILLV].scalars[0]);
             for(const Key* pp = bgn; pp < end; pp += VLEN)
             {
+                using MoveMask = tpl_intrinsics::MoveMask<typename VRegK::vector_t>;
                 // Check key vector against given key (32 bytes at a time)
                 const VRegK     src = VRegK::LoadUnaligned(pp);
                 const VRegK     veq = src.CmpEq(vkk);
-                const uint32_t  msk = _mm256_movemask_epi8(veq); // AVX2-only
+                const uint32_t  msk = MoveMask::op(veq); // AVX2-only, for now
                 if(msk)
                     return {pp - Keys(), msk}; // found
                 // If there's empty slot then return not found
                 const VRegK     v00 = src.CmpEq(VEMPTY);
-                const uint32_t  m00 = _mm256_movemask_epi8(v00);  // AVX2-only
+                const uint32_t  m00 = MoveMask::op(v00);  // AVX2-only, for now
                 if(m00)
                     break;
             }
