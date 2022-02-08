@@ -12,6 +12,7 @@ namespace bitfenix
 namespace order_based
 {
     using px_t = float;
+    using oid_t = uint32_t;
 
     struct PxQx
     {

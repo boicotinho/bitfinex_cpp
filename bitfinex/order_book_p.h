@@ -23,12 +23,11 @@ namespace level_based
         explicit constexpr operator bool() const {return empty();}
     };
 
-    // https://docs.bitfinex.com/reference#ws-public-books
-    // Since erased orders do not provide a market opportunity
-    // which wasn't there before, no strategy should be generating
-    // trades on order deletion, only order insertion, and only the
-    // order insertions which improve the tob of the book.
-    // Sol looking at just the insertion performance:
+    // Since order deletion does not provide a market opportunity
+    // which wasn't there, no strategy should be generating
+    // trades on order deletion, only on order insertion, and only
+    // those order insertions that improve the top of the book.
+    // Looking at just the insertion performance:
     //  Perf 1,000,000 x flat_map insert random
     //      0.0 % :           52 cc
     //     10.0 % :          128 cc
@@ -40,14 +39,14 @@ namespace level_based
     //     99.8 % :          396 cc
     //     99.9 % :          828 cc
     //    100.0 % :      923,284 cc
-    //    average :          158 cc    
+    //    average :          158 cc
     // Possible optimization 1:
     //      When the market data tick arrives, don't save it in the flat_map yet.
-    //      Instead, save the new update at: PxQx m_last_update; 
-    //      Process any callback into the trading engine; 
+    //      Instead, save the new update at: PxQx m_last_update;
+    //      Process any callback into the trading engine;
     //      If/when the callback asks for the top of book, index ii,
-    //      jump to PxQx at index [ii] into the vector, compare that price 
-    //      with m_last_update; If better return PxQx; 
+    //      jump to PxQx at index [ii] into the vector, compare that price
+    //      with m_last_update; If better return PxQx;
     //      else decrement iterator and compare again.
     // Possible optomization 2:
     //      If user can supply the maximum depth D of book he's interested in,
@@ -56,10 +55,14 @@ namespace level_based
     //      When user asks for top of book, we can just give a pointer to the
     //      whole small vector.
     //      Before calling the new socket recv(), we can update the flat_map.
+    // https://docs.bitfinex.com/reference#ws-public-books
+    //      wscat -c wss://api-pub.bitfinex.com/ws/2
+
+    // One Side (bid/ask) of an order book for a single instrument
     class OrderBookSideP
     {
         using LevelMap = boost::container::flat_map<px_t, qx_t>; // ordered
-        LevelMap m_level_map; 
+        LevelMap m_level_map;
     public:
         void clear() {m_level_map.clear();}
 
@@ -72,7 +75,7 @@ namespace level_based
         // better than templating LevelMap to use inverted comparator (std::greater<>)
         // because the latter will generate twice the ammount of code and hence more
         // L1i cache pressure, more branch mispredictions, more cache miss penalties.
-        PxQx get_tob(uint32_t offset, eSide side) 
+        PxQx get_tob(uint32_t offset, eSide side)
             {
             size_t const sz = m_level_map.size();
             if(UNLIKELY(offset >= sz))
@@ -83,6 +86,7 @@ namespace level_based
             }
     };
 
+    // Order book (both sides) for a single instrument,
     class OrderBookP
     {
         OrderBookSideP m_book_sides[2];
