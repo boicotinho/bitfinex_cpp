@@ -15,7 +15,7 @@
 #include <stddef.h>
 #include <x86intrin.h>
 
-// TODO:    1) Test UT in AVX2 laptop 
+// TODO:    1) Test UT in AVX2 laptop
 //          2) Put DenseMap in class
 //          3) If AVX2 not enabled (march=native), then use normal unordered map, maybe flat version of it
 //          4) Profile test
@@ -254,6 +254,11 @@ BOOST_AUTO_TEST_SUITE(bitfinex)
 
 BOOST_AUTO_TEST_CASE(dense_map)
 {
+    #if !defined(__AVX2__)
+        BOOST_WARN("AVX2 not supported. Skipping test");
+        return;
+    #endif
+
     struct TagToBookMapTraits
     {
         using Key    = uint32_t; // tag
