@@ -15,11 +15,6 @@ JsonObj::ParseError::ParseError(std::string const& details)
 {
 }
 
-//struct JsonObj::Impl
-//{
-//    value m_jv;
-//};
-
 // Input Exaples:
 // { "event": "conf", "flags": "131072" }
 // { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" }
@@ -31,7 +26,6 @@ JsonObj::JsonObj(char const* const bgn, char const* const end)
     std::string input(std::string(bgn, end));
     try
     {
-        //m_impl->m_jv = parse(std::string(bgn, end));
         value jv = parse(input);
         object& obj = jv.as_object();
         for(const auto& kvp: obj)
@@ -44,17 +38,6 @@ JsonObj::JsonObj(char const* const bgn, char const* const end)
             std::string vv = ss_val.str();
             if(boost::json::kind::string == kind)
                 vv = vv.substr(1,vv.size()-2);
-            //switch(kind)
-            //{
-            //case boost::json::kind::null:    ss_val << "";              break;
-            //case boost::json::kind::bool_:   ss_val << val.as_bool();   break;
-            //case boost::json::kind::int64:   ss_val << val.as_int64();  break;
-            //case boost::json::kind::uint64:  ss_val << val.as_uint64(); break;
-            //case boost::json::kind::double_: ss_val << val.as_double(); break;
-            //case boost::json::kind::string:  ss_val << val.as_string(); break;
-            //case boost::json::kind::array:   ss_val << val.as_array();  break;
-            //case boost::json::kind::object:  ss_val << val.as_object(); break;
-            //}
             m_key_value_map.insert({key, vv});
         }
     }
@@ -71,11 +54,6 @@ bool JsonObj::try_get(std::string const& key, std::string& out_val) const
         return false;
     out_val = it->second;
     return true;
-    //object const& obj = m_impl->m_jv.as_object();
-    //auto it = obj.find(key);
-    //if(it == obj.end())
-    //    return false;
-    //out_val = value_to<std::string>( it->value() );
 }
 
 std::string JsonObj::get(std::string const& key) const
@@ -85,25 +63,5 @@ std::string JsonObj::get(std::string const& key) const
         throw ParseError("Key not found: '" + key + "'");
     return val;
 }
-
-/*
-JsonObj::JsonObj(JsonObj const& other)
-{
-}
-
-JsonObj::JsonObj(JsonObj && other)
-{
-}
-
-JsonObj& JsonObj::operator=(JsonObj const& other)
-{
-    return *this;
-}
-
-JsonObj& JsonObj::operator=(JsonObj && other)
-{
-    return *this;
-}
-*/
 
 } // namespace bitfenix

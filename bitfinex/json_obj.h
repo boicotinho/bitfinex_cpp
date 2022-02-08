@@ -11,8 +11,6 @@ namespace bitfenix
 // https://www.w3schools.com/js/js_json_objects.asp
 class JsonObj
 {
-    //struct Impl;
-    //Impl* m_impl {}; // don't create dependency on boost/json for now
     std::map<std::string, std::string> m_key_value_map;
 public:
 
@@ -29,12 +27,6 @@ public:
         {
         explicit ParseError(std::string const& details="");
         };
-
-    //JsonObj(JsonObj const&);
-    //JsonObj(JsonObj &&);
-    //JsonObj& operator= (JsonObj const&);
-    //JsonObj& operator= (JsonObj &&);
-    //~JsonObj();
 };
 
 } // namespace bitfenix

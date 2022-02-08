@@ -39,4 +39,37 @@ BOOST_AUTO_TEST_CASE(json_obj_parse_subscription_info)
     BOOST_CHECK_EQUAL(obj.get("pair"), "BTCUSD");
 }
 
+BOOST_AUTO_TEST_CASE(json_obj_copy_ctor)
+{
+    const auto jstr = R"({"event":"subscribed","channel":"book","chanId":266343,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"25","pair":"BTCUSD"})";
+    JsonObj obj_src(jstr);
+    JsonObj obj(obj_src);
+    BOOST_CHECK_EQUAL(obj_src.get("event"), "subscribed");
+    BOOST_CHECK_EQUAL(obj.get("event"), "subscribed");
+    BOOST_CHECK_EQUAL(obj.get("channel"), "book");
+    BOOST_CHECK_EQUAL(obj.get("chanId"), "266343");
+    BOOST_CHECK_EQUAL(obj.get("symbol"), "tBTCUSD");
+    BOOST_CHECK_EQUAL(obj.get("prec"), "P0");
+    BOOST_CHECK_EQUAL(obj.get("freq"), "F0");
+    BOOST_CHECK_EQUAL(obj.get("len"), "25");
+    BOOST_CHECK_EQUAL(obj.get("pair"), "BTCUSD");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_move_ctor)
+{
+    const auto jstr = R"({"event":"subscribed","channel":"book","chanId":266343,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"25","pair":"BTCUSD"})";
+    JsonObj obj_src(jstr);
+    JsonObj obj(std::move(obj_src));
+    std::string val;
+    BOOST_CHECK_EQUAL(obj_src.try_get("event", val), false);
+    BOOST_CHECK_EQUAL(obj.get("event"), "subscribed");
+    BOOST_CHECK_EQUAL(obj.get("channel"), "book");
+    BOOST_CHECK_EQUAL(obj.get("chanId"), "266343");
+    BOOST_CHECK_EQUAL(obj.get("symbol"), "tBTCUSD");
+    BOOST_CHECK_EQUAL(obj.get("prec"), "P0");
+    BOOST_CHECK_EQUAL(obj.get("freq"), "F0");
+    BOOST_CHECK_EQUAL(obj.get("len"), "25");
+    BOOST_CHECK_EQUAL(obj.get("pair"), "BTCUSD");
+}
+
 BOOST_AUTO_TEST_SUITE_END()
