@@ -2,11 +2,17 @@
 #include "bitfinex/order_book_p.h"
 #include "bitfinex/order_book_r.h"
 #include "bitfinex/types.h"
+#include "bitfinex/json_obj.h"
+#include "core/gcc_utils.h"
+#include "core/fast_parse.h"
+#include "core/x_assert.h"
+#include <stdexcept>
+#include <stdint.h>
 
 namespace bitfenix
 {
 
-// Parser for the bitfinex protocol.
+// Parser for the bitfinex protocol based on fast_parse() functions
 class Parser
 {
 public:
@@ -16,37 +22,28 @@ public:
     // When a message is successfully parsed, the matching OnMessageXXXX() virtual method will be called.
     // Note that when the compiler can see there's only 1 derivation of a class, it should
     // be able to optimize away the virtual calls here and promote them to inline calls.
+    // TODO: Maybe this method should include an argument is_raw_book = {true, false, dont_know},
+    //       so the method doesn't have to dynamically detect it from the data only.
+    size_t parse_data_and_dispatch_message( // may throw(TruncatedData);
+                char const* raw_data, // pointer to beginning of received data. don't know if contains partial, full or multiple messages
+                char const* end );    // one past end of raw_data
 
-    // Asking for book checksum:
-    // { "event": "conf", "flags": "131072" }
-    // Received Response:
-    // {"event":"conf","status":"OK"}
-    // Check checksum will appear periodically:
-    // [266343,"hb"]
-
-    // Sending a subscription request:
-    // { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" }
-
-    // Received request response:
-    // {"event":"info","version":2,"serverId":"ba599674-2ff9-43a0-bb0a-eb3174ab2073","platform":{"status":1}}
-
-    // Received subscription response:
-    // {"event":"subscribed","channel":"book","chanId":266343,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"25","pair":"BTCUSD"}
-
-    size_t parse_data_and_dispatch_message(char const* const a_raw_data, size_t const a_len)
+    // Since it will be very rare that a received data will be truncated,
+    // throwing exceptions when that happens is OK and simplifies the logic;
+    struct TruncatedData : std::runtime_error
         {
-        return 0;
-        }
-private:
+        TruncatedData() : std::runtime_error("Parser::TruncatedData") {}
+        };
+
+    //======//
+protected:  // To be overridden by derived class:
+    //======//
+
     // Events are parsed more slowly because they aren't latency sensitive.
-    virtual void on_message_event()
-        {
-        }
+    virtual void on_message_event(const JsonObj&) {}
 
     // [266343,"hb"]
     virtual void on_message_heartbeat(channel_tag_t) {}
-
-    // TODO: Book checksum message
 
     // Single update message:
     //   [CHANNEL_ID, [PRICE,COUNT,AMOUNT]]
@@ -77,18 +74,131 @@ private:
         qx_side_t            qty_and_side,
         bool                 is_bulk_update) // true if this is part of large bulk update message, which gets sent in the beginning of a subscription
         {}
+
+private:
+    static void skip(char const*& pp, char const* end, char expected_char);
+    size_t process_single_book_update(channel_tag_t, char const* bgn, char const* end, bool is_bulk);
+    size_t process_bulk_book_update(channel_tag_t, char const* bgn, char const* end);
+    size_t process_json_event(char const* bgn, char const* end);
 };
 
-// Deals with parsing the bitfinex protocol, in chunks of string data at a time.
-// By the nature of TCP, a chunk of data will most often contain just a single, full message.
-// However, a chunk may in some cases contain just a fraction of a message,
-// and in some other cases a chunk of data may contain multiple messages.
-//class ParserSegmented : public Parser
-//{
-//public:
-//    std::pair<char*, size_t> recv_begin();
-//    void recv_commit(size_t);
-//    // maybe better dealt with by using beast::flat_buffer
-//};
+
+//=================================================================================================
+FORCE_INLINE void Parser::skip(char const*& pp, char const* end, char expected_char)
+{
+    ASSERT_EQ(*pp, expected_char);
+    if(pp >= end)
+        throw TruncatedData();
+    pp += (pp < end);
+}
+
+//=================================================================================================
+FORCE_INLINE size_t Parser::parse_data_and_dispatch_message(
+        char const* const a_raw_data,
+        char const* const a_end )
+{
+    if(UNLIKELY(a_end == a_raw_data))
+        return 0;
+    char const* pp = a_raw_data;
+    if(LIKELY(*pp == '['))
+    {
+        // This is the common case, one of:
+        //      [266343,[41700,4,-1.48322347]]
+        //      [165356,[86143754891,41647.71373492,0.10368902]]
+        //      ^
+        // Bulk update:
+        //      [266343,[[41669,1,0.00057903],[41664,1,0.08608615], ...
+        //      [165356,[[86143757311,41652,0.24],[86143768647,41652,0.00006183], ...
+        //      ^
+        skip(pp, a_end, '[');
+        channel_tag_t channel;
+        fast_parse(pp, a_end, channel);
+        skip(pp, a_end, ',');
+        if(UNLIKELY(pp[1] == '[')) // Bulk update. Very rare.
+        {
+            pp += process_bulk_book_update(channel, pp, a_end);
+        }
+        else // Single update. This is by far the most common case, 99.99% of the time.
+        {
+            pp += process_single_book_update(channel, pp, a_end, false);
+        }
+    }
+    else // unlikely event report, starts with '{'
+    {
+        pp += process_json_event(pp, a_end);
+    }
+    return pp - a_raw_data;
+}
+
+//=================================================================================================
+FORCE_INLINE size_t Parser::process_single_book_update(
+        channel_tag_t const a_curr_channel,
+        char const*   const a_bgn,
+        char const*   const a_end,
+        bool          const a_is_bulk)
+{
+    char const* pp = a_bgn;
+    // This is the common case, one of:
+    //      [266343,[41700,4,-1.48322347]]
+    //      [165356,[86143754891,41647.71373492,0.10368902]]
+    //              ^
+    // Bulk update:
+    //      [266343,[[41669,1,0.00057903],[41664,1,0.08608615], ...
+    //      [165356,[[86143757311,41652,0.24],[86143768647,41652,0.00006183], ...
+    //               ^
+    skip(pp, a_end, '[');
+
+    level_based::px_t price_level;
+
+    if(FeedTraits::SUPPORTS_RAW_BOOK) // Compile-time constant, code will be optimized out when we don't need raw books
+    {
+        // Dynamic detection of raw book feed, when we don't know in advance.
+        // It might be advantageous to pass is_raw_book as an argument,
+        // as it might be cheaper to determine this from upstream, given the channel id.
+        // [165356,[86143754891,41647.71373492,0.10368902]]
+        //          ^
+        uint64_t maybe_price_or_order_id;
+        fast_parse(pp, a_end, maybe_price_or_order_id);
+        skip(pp, a_end, ',');
+        // It seems that if the first value is 10s of billions large,
+        // it cannot be a price, but ought to be the OrderID.
+        if(maybe_price_or_order_id >= 10000000000uLL)
+        {
+            order_based::oid_t order_id = maybe_price_or_order_id;
+            // [165356,[86143754891,41647.71373492,0.10368902]]
+            //                      ^
+            order_based::px_t price;
+            fast_parse(pp, a_end, price);
+            skip(pp, a_end, ',');
+            qx_side_t qs;
+            fast_parse(pp, a_end, qs);
+            skip(pp, a_end, ']');
+            skip(pp, a_end, ']');
+            this->on_message_update_r(a_curr_channel, order_id, price, qs, a_is_bulk);
+            return pp - a_bgn;
+        }
+        else
+            price_level = maybe_price_or_order_id;
+    }
+    else // else we only ever parse P0 book updates
+    {
+        // [266343,[41700,4,-1.48322347]]
+        //          ^
+        fast_parse(pp, a_end, price_level);
+        skip(pp, a_end, ',');
+    }
+
+    // P0, level-based book update
+    uint32_t order_count;
+    fast_parse(pp, a_end, order_count);
+    skip(pp, a_end, ',');
+    qx_side_t qs;
+    fast_parse(pp, a_end, qs);
+    skip(pp, a_end, ']');
+    if(!a_is_bulk)
+        skip(pp, a_end, ']');
+    this->on_message_update_p(a_curr_channel, price_level, order_count, qs, a_is_bulk);
+    return pp - a_bgn;
+}
 
 } // namespace bitfenix

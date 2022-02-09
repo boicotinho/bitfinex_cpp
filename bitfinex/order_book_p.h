@@ -1,10 +1,11 @@
 #pragma once
 #include "bitfinex/types.h"
 #include "core/gcc_utils.h"
+#include <boost/container/flat_map.hpp>
 #include <cstdint>
 #include <string>
 #include <cmath>
-#include <boost/container/flat_map.hpp>
+#include <memory>
 
 namespace bitfenix
 {
@@ -20,7 +21,21 @@ namespace level_based
         qx_t total_qty;
 
         constexpr bool empty() const {return price_level == 0;}
-        explicit constexpr operator bool() const {return empty();}
+        explicit constexpr operator bool() const {return !empty();}
+    };
+
+    // Top of book. Should be returned as a unit, acquiring potential
+    // lock just once and ensuring consistency. We don't want to split
+    // into individual calls because that might result in an inconsistent
+    // snapshot of the book (e.g. bid from before, ask from after MD update).
+    struct TOB
+    {
+        PxQx side[2];
+        // Probably not safe to trade when you don't have both sides of the book.
+        constexpr bool has_both() const {return side[0] && side[1];}
+        constexpr bool has_side(eSide ss) const {return (bool)side[(int)ss];}
+        constexpr bool empty() const {return side[0].empty() && side[1].empty();}
+        constexpr static TOB Zero() {return {{{0,0},{0,0}}};}
     };
 
     // Since order deletion does not provide a market opportunity
@@ -75,7 +90,7 @@ namespace level_based
         // better than templating LevelMap to use inverted comparator (std::greater<>)
         // because the latter will generate twice the ammount of code and hence more
         // L1i cache pressure, more branch mispredictions, more cache miss penalties.
-        PxQx get_tob(uint32_t offset, eSide side)
+        PxQx get_best_px(uint32_t offset, eSide side)
             {
             size_t const sz = m_level_map.size();
             if(UNLIKELY(offset >= sz))
@@ -87,27 +102,34 @@ namespace level_based
     };
 
     // Order book (both sides) for a single instrument,
+    // With a potential lock if thread safety is required by given Traits.
     class OrderBookP
+        : public FeedTraits::MaybeMutex // Empty base class optimization when using NullMutex
     {
         OrderBookSideP m_book_sides[2];
     public:
         void clear()
             {
+            FeedTraits::MaybeLockGuard lock(*this);
             m_book_sides[eSide::BID].clear();
             m_book_sides[eSide::ASK].clear();
             }
         void assign_level(px_t price_level, qx_t new_qty)
             {
+            FeedTraits::MaybeLockGuard lock(*this);
             const auto side = qx_to_side(new_qty);
             m_book_sides[side].assign_level(price_level, std::fabs(new_qty) );
             }
         void erase_level(px_t price_level, eSide side)
             {
+            FeedTraits::MaybeLockGuard lock(*this);
             m_book_sides[side].erase_level(price_level);
             }
-        PxQx get_tob(eSide side, uint32_t offset)
+        TOB get_tob(uint32_t offset)
             {
-            m_book_sides[side].get_tob(offset, side);
+            FeedTraits::MaybeLockGuard lock(*this);
+            return { m_book_sides[0].get_best_px(offset, (eSide)0)
+                   , m_book_sides[1].get_best_px(offset, (eSide)1) };
             }
     };
 
