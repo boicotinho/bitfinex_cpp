@@ -6,7 +6,7 @@ ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 set(CMAKE_CXX_STANDARD 11)
 
 add_compile_options(
-    -Wall -Wextra -Wpedantic -Werror -march=core-avx2 -mtune=native # core-avx2
+    -Wall -Wextra -Wpedantic -Werror -march=native -mtune=native # core-avx2
     -Wdeprecated -W -Wpointer-arith -Wno-uninitialized -Wno-unused
     -Wno-sign-compare -Wno-comment -Wno-unknown-pragmas -Wno-unused-parameter
     -Wno-invalid-offsetof -no-integrated-cpp -fno-strict-aliasing
