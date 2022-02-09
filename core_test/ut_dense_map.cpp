@@ -17,7 +17,7 @@ BOOST_AUTO_TEST_SUITE(core)
 
 // For Profiling
 constexpr int NN = 1000;
-constexpr int QQ = 988; // 988
+constexpr int QQ = 988;
 constexpr int SS = 10248;
 
 std::vector<int> const g_random_keys = []()
@@ -33,7 +33,6 @@ std::vector<int> const g_random_keys = []()
 
 size_t GenKey(size_t xx)
 {
-    //return std::hash<size_t>()(xx) % QQ;
     return g_random_keys[xx % g_random_keys.size()];
 }
 
@@ -123,18 +122,18 @@ BOOST_AUTO_TEST_CASE(profile_dense_map, *boost::unit_test::precondition(exec_mic
     }
 
     std::cout << FormatCcTimingsTable(timings, "DenseMap lookup hit");
-Perf 1,000 x DenseMap lookup hit
-    0.0 % :           50 cc
-   10.0 % :           52 cc
-   50.0 % :           58 cc
-   75.0 % :           64 cc
-   90.0 % :           72 cc
-   99.0 % :           76 cc
-   99.5 % :           78 cc
-   99.8 % :          102 cc
-   99.9 % :          110 cc
-  100.0 % :          110 cc
-  average :           59 cc
+    // Perf 1,000 x DenseMap lookup hit
+    //     0.0 % :           50 cc
+    //    10.0 % :           52 cc
+    //    50.0 % :           58 cc
+    //    75.0 % :           64 cc
+    //    90.0 % :           72 cc
+    //    99.0 % :           76 cc
+    //    99.5 % :           78 cc
+    //    99.8 % :          102 cc
+    //    99.9 % :          110 cc
+    //   100.0 % :          110 cc
+    //   average :           59 cc
 }
 
 #endif // DENSE_MAP_SUPPORTED
@@ -175,28 +174,17 @@ BOOST_AUTO_TEST_CASE(profile_unordered_map, *boost::unit_test::precondition(exec
 
     std::cout << FormatCcTimingsTable(timings, "std::unordered_map lookup hit");
     // Perf 1,000 x std::unordered_map lookup hit
-    //     0.0 % :           54 cc
-    //    10.0 % :           60 cc
-    //    50.0 % :           81 cc
-    //    75.0 % :          120 cc
-    //    90.0 % :          147 cc
-    //    99.0 % :          231 cc
-    //    99.5 % :          276 cc
-    //    99.8 % :          342 cc
-    //    99.9 % :          381 cc
-    //   100.0 % :          381 cc
-Perf 1,000 x std::unordered_map lookup hit
-    0.0 % :           68 cc
-   10.0 % :           70 cc
-   50.0 % :           82 cc
-   75.0 % :          134 cc
-   90.0 % :          154 cc
-   99.0 % :          222 cc
-   99.5 % :          234 cc
-   99.8 % :          242 cc
-   99.9 % :          288 cc
-  100.0 % :          288 cc
-  average :          102 cc
+    //     0.0 % :           68 cc
+    //    10.0 % :           70 cc
+    //    50.0 % :           82 cc
+    //    75.0 % :          134 cc
+    //    90.0 % :          154 cc
+    //    99.0 % :          222 cc
+    //    99.5 % :          234 cc
+    //    99.8 % :          242 cc
+    //    99.9 % :          288 cc
+    //   100.0 % :          288 cc
+    //   average :          102 cc
 }
 
 BOOST_AUTO_TEST_SUITE_END()
