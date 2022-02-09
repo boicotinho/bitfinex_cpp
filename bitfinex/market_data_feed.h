@@ -32,8 +32,8 @@ class MarketDataFeed : private Parser
 {
 public:
     void start_recv_thread(std::string const& url = "wss://api-pub.bitfinex.com/ws/2");
-
     void stop_recv_thread() noexcept;
+    bool is_started() const {return m_recv_thread.joinable();}
 
     // Subscribe/unsubscribe may not be called concurrently with book access methods.
     OrderBookPPtr subscribe( SubscriptionConfig const&,
