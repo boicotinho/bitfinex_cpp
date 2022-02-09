@@ -143,7 +143,7 @@ namespace level_based
             }
     public:
         channel_tag_t channel_id() const {return m_channel;}
-        TOB get_tob(uint32_t offset) const
+        TOB get_tob(uint32_t offset = 0) const
             {
             auto const mtx = static_cast<FeedTraits::MaybeMutex*>(
                              const_cast<OrderBookP*>(this));

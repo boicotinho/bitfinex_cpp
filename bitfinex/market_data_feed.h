@@ -3,7 +3,6 @@
 #include "bitfinex/order_book_r.h"
 #include "bitfinex/parser.h"
 #include "bitfinex/types.h"
-#include "bitfinex/subscription.h"
 #include "bitfinex/subscription_cfg.h"
 #include "web_socket/web_socket_client.h"
 #include "core/dense_map.h"
@@ -22,6 +21,12 @@
 namespace bitfinex
 {
 
+// Stable storage for books. Books aren't allowed to change memory location
+// once created, because the python module concurrently acquires locks on books.
+// This is also used as a subscription
+using OrderBookPPtr = std::shared_ptr<level_based::OrderBookP>;
+
+
 // Intended for use by one WebSocket connection, possibly multiple subscriptions.
 class MarketDataFeed : private Parser
 {
@@ -31,9 +36,9 @@ public:
     void stop_recv_thread() noexcept;
 
     // Subscribe/unsubscribe may not be called concurrently with book access methods.
-    Subscription subscribe( SubscriptionConfig const&,
+    OrderBookPPtr subscribe( SubscriptionConfig const&,
                             std::chrono::nanoseconds timeout = std::chrono::seconds(10));
-    void unsubscribe(Subscription&);
+    void unsubscribe(channel_tag_t);
 
     ~MarketDataFeed() {stop_recv_thread();}
 private:

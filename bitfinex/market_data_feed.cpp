@@ -49,7 +49,7 @@ void MarketDataFeed::run_loop_recv_thread()
     }
 }
 
-Subscription MarketDataFeed::subscribe(
+OrderBookPPtr MarketDataFeed::subscribe(
         SubscriptionConfig const&      a_subs_cfg,
         std::chrono::nanoseconds const a_timeout)
 {
@@ -63,16 +63,14 @@ Subscription MarketDataFeed::subscribe(
     auto const rpc_req = a_subs_cfg.as_json_rpc_request(std::to_string(sub_id));
     m_ws_client.blk_send_str(rpc_req);
     if(std::future_status::ready != fut.wait_for(a_timeout))
-        return Subscription();
+        return {};
 
-    OrderBookPPtr ob (std::move(fut.get()));
-    return Subscription(std::move(ob));
+    return fut.get();
 }
 
-void MarketDataFeed::unsubscribe(Subscription& a_subs)
+void MarketDataFeed::unsubscribe(channel_tag_t a_chan_id)
 {
-    auto const chan_id = a_subs.channel_id();
-    std::string const rpc_req = FormatString(R"({"event": "unsubscribe", "chanId":%u})",chan_id);
+    std::string const rpc_req = FormatString(R"({"event": "unsubscribe", "chanId":%u})",a_chan_id);
     m_ws_client.blk_send_str(rpc_req);
 }
 
