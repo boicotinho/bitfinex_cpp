@@ -137,4 +137,5 @@ namespace level_based
     };
 
 } // namespace level_based
+
 } // namespace bitfinex
