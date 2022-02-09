@@ -4,13 +4,13 @@
 #include "bitfinex/parser.h"
 #include "bitfinex/types.h"
 #include "bitfinex/subscription_cfg.h"
-#include "core/gcc_utils.h"
-// #include "core/dense_map.h" // TODO
 #include "web_socket/web_socket_client.h"
+#include "core/dense_map.h"
+#include "core/hashers.h"
+#include "core/gcc_utils.h"
+#include <map>
 #include <cstdint>
 #include <string>
-#include <map>
-#include <unordered_map>
 #include <vector>
 #include <chrono>
 #include <memory>
@@ -25,8 +25,6 @@ namespace bitfinex
 using OrderBookPPtr = std::shared_ptr<level_based::OrderBookP>;
 class Subscription;
 
-template<class Key, class Data>
-using DenseMap = std::unordered_map<Key, Data>; // TODO: Open-address hash,
 
 // Intended for use by one WebSocket connection, possibly multiple subscriptions.
 class MarketDataFeed : private Parser
@@ -55,9 +53,16 @@ private:
         OrderBookPPtr       book_p;
         SubscriptionConfig  cfg;
     };
+    struct BookMapTraits
+    {
+        using Key    = channel_tag_t; // tag
+        using Hasher = IdentityHasher<Key>;
+        enum { EMPTY_KEY       = 0 };
+        enum { MIN_NUM_BUCKETS = 32 };
+        using Value  = OrderBookPPtr;
+    };
 private:
-    DenseMap<channel_tag_t,
-        OrderBookPPtr>          m_books_p;
+    DenseMap<BookMapTraits>     m_books_p;
     std::thread                 m_recv_thread;
     WebSocketClient             m_ws_client;
     std::atomic_bool            m_quit {};

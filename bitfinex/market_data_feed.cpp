@@ -102,7 +102,7 @@ void MarketDataFeed::on_message_event(const JsonObj& a_json)
         PendingSub& sub = it->second;
         sub.cfg.channelId = chan_id;
         sub.book_p = std::make_shared<level_based::OrderBookP>(sub.cfg.channelId);
-        m_books_p.insert({chan_id, sub.book_p});
+        m_books_p.insert({chan_id, sub.book_p}); // m_books_p[chan_id] = sub.book_p; //
         sub.ready_sem.SignalReady();
     }
     else if(event_type == "unsubscribed")
