@@ -102,7 +102,7 @@ namespace level_based
         // better than templating LevelMap to use inverted comparator (std::greater<>)
         // because the latter will generate twice the ammount of code and hence more
         // L1i cache pressure, more branch mispredictions, more cache miss penalties.
-        PxQx get_best_px(uint32_t offset, eSide side)
+        PxQx get_best_px(uint32_t offset, eSide side) const
             {
             size_t const sz = m_level_map.size();
             if(UNLIKELY(offset >= sz))
@@ -122,7 +122,6 @@ namespace level_based
         OrderBookSideP m_book_sides[2];
     public:
         explicit OrderBookP(channel_tag_t chid = 0) : m_channel(chid) {}
-        channel_tag_t channel_id() const {return m_channel;}
         void clear()
             {
             FeedTraits::MaybeLockGuard lock(*this);
@@ -142,9 +141,11 @@ namespace level_based
             eSide const side = qx_to_side(qs);
             m_book_sides[side].erase_level(price_level);
             }
-        TOB get_tob(uint32_t offset)
+    public:
+        channel_tag_t channel_id() const {return m_channel;}
+        TOB get_tob(uint32_t offset) const
             {
-            FeedTraits::MaybeLockGuard lock(*this);
+            FeedTraits::MaybeLockGuard lock(const_cast<OrderBookP&>(*this));
             return { m_book_sides[0].get_best_px(offset, (eSide)0)
                    , m_book_sides[1].get_best_px(offset, (eSide)1) };
             }
