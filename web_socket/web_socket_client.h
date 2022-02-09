@@ -24,6 +24,7 @@ public:
 
     // Sends data, blocking.
     size_t blk_send(void const* data, size_t len);
+    size_t blk_send_str(std::string const& str) {return blk_send(str.data(), str.length());}
 
     // comsume_begin() returns a buffer with data received from the server.
     // once consumed, call consume_commit() to 'remove' the data from the
