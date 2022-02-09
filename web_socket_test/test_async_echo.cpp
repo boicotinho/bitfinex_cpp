@@ -254,16 +254,6 @@ int main(int argc, char** argv)
     // auto hshk = "/";
     // auto text = "MyWebSocketTest";
 
-    // Check command line arguments.
-    //if(argc != 4)
-    //{
-    //    std::cerr <<
-    //        "Usage: websocket-client-async-ssl <host> <port> <text>\n" <<
-    //        "Example:\n" <<
-    //        "    websocket-client-async-ssl echo.websocket.org 443 \"Hello, world!\"\n";
-    //    return EXIT_FAILURE;
-    //}
-
     if(argc > 1)
         host = argv[1];
     if(argc > 2)
