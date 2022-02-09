@@ -1,8 +1,11 @@
 #pragma once
 
-#if !defined(__AVX2__)
+#if defined(__AVX2__)
+    #define DENSE_MAP_SUPPORTED 1
+#endif
+
+#if !(DENSE_MAP_SUPPORTED)
     #include <unordered_map>
-    //template<class Key, class Value>
     template<class Traits>
     using DenseMap = std::unordered_map<typename Traits::Key, typename Traits::Value>;
 #else
@@ -211,6 +214,14 @@
             return ValueAt(ix);
             }
 
+        Value* lookup_ptr(Key kk)
+            {
+            const idx_t ix = m_index.find_ix(kk);
+            if(DenseIdx::NOT_FOUND == ix)
+                return nullptr;
+            return ValueAt(ix);
+            }
+
         // No latency critical use case for now...
         template<class...CtorArgs>
         std::pair<Value*, bool> emplace(Key kk, CtorArgs&&... args)
@@ -260,4 +271,4 @@
         std::array<ValStore, NUM_BUCKETS>   m_values;
     };
 
-#endif // __AVX2__
+#endif // DENSE_MAP_SUPPORTED

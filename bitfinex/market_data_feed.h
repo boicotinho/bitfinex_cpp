@@ -17,6 +17,7 @@
 #include <memory>
 #include <atomic>
 #include <thread>
+#include <future>
 
 namespace bitfinex
 {
@@ -25,14 +26,13 @@ namespace bitfinex
 class MarketDataFeed : private Parser
 {
 public:
-    void start_recv_thread(
-            std::chrono::nanoseconds timeout = std::chrono::seconds(10),
-            std::string const& url = "wss://api-pub.bitfinex.com/ws/2");
+    void start_recv_thread(std::string const& url = "wss://api-pub.bitfinex.com/ws/2");
 
     void stop_recv_thread() noexcept;
 
     // Subscribe/unsubscribe may not be called concurrently with book access methods.
-    Subscription subscribe(SubscriptionConfig const&);
+    Subscription subscribe( SubscriptionConfig const&,
+                            std::chrono::nanoseconds timeout = std::chrono::seconds(10));
     void unsubscribe(Subscription&);
 
     ~MarketDataFeed() {stop_recv_thread();}
@@ -42,28 +42,28 @@ private:
     virtual void on_message_update_p(channel_tag_t, level_based::px_t, size_t, qx_side_t, bool) override;
     virtual void on_message_update_r(channel_tag_t, order_based::oid_t, order_based::px_t, qx_side_t, bool) override;
 private:
-    struct PendingSub
-    {
-        Semaphore           ready_sem;
-        OrderBookPPtr       book_p;
-        SubscriptionConfig  cfg;
-    };
     struct BookMapTraits
     {
-        using Key    = channel_tag_t; // tag
+        using Key    = channel_tag_t;
+        using Value  = OrderBookPPtr;
         using Hasher = IdentityHasher<Key>;
         enum { EMPTY_KEY       = 0 };
         enum { MIN_NUM_BUCKETS = 32 };
-        using Value  = OrderBookPPtr;
     };
 private:
+    OrderBookPPtr               m_single_book; // optimization for when there's only one book
     DenseMap<BookMapTraits>     m_books_p;
     std::thread                 m_recv_thread;
     WebSocketClient             m_ws_client;
     std::atomic_bool            m_quit {};
+
+    // Subscription synchronization
+    using sub_id_t = int;
+    std::map< sub_id_t
+            , std::promise<
+                OrderBookPPtr>> m_pending_subscriptions;
     SleepMutex                  m_subscription_mtx;
-    int                         m_next_sub_guid {1};
-    std::map<int, PendingSub>   m_pending_subscriptions;
+    sub_id_t                    m_next_sub_guid {1};
 };
 
 } // namespace bitfinex

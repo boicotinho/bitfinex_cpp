@@ -15,12 +15,12 @@ using OrderBookPPtr = std::shared_ptr<level_based::OrderBookP>;
 // instead of accessing it from a callback off the network thread (fast).
 class Subscription
 {
-    OrderBookPPtr       m_book_p;
-    SubscriptionConfig  m_cfg;
+    OrderBookPPtr m_book_p;
 public:
     Subscription() = default;
-    Subscription(OrderBookPPtr const& book, SubscriptionConfig const& cfg)
-        : m_book_p(book), m_cfg(cfg) {}
+    Subscription(OrderBookPPtr const& book) : m_book_p(book) {}
+
+    channel_tag_t channel_id() const {return m_book_p ? m_book_p->channel_id() : 0;}
 
     level_based::TOB get_tob(uint32_t depth = 0) const
         {
@@ -28,8 +28,6 @@ public:
             return level_based::TOB::Zero();
         return m_book_p->get_tob(depth);
         }
-
-    const SubscriptionConfig& get_config() const {return m_cfg;}
 };
 
 } // namespace bitfinex

@@ -3,14 +3,14 @@
 #include "core/dense_map.h"
 #include "core/hashers.h"
 
-#if defined(__AVX2__)
+#if (DENSE_MAP_SUPPORTED)
 
 BOOST_AUTO_TEST_SUITE(core)
 
 BOOST_AUTO_TEST_CASE(dense_map)
 {
-    #if !defined(__AVX2__)
-        BOOST_WARN("AVX2 not supported. Skipping test");
+    #if !(DENSE_MAP_SUPPORTED)
+        BOOST_WARN("DENSE_MAP_SUPPORTED disabled. Skipping test");
         return;
     #endif
 
@@ -56,4 +56,4 @@ BOOST_AUTO_TEST_CASE(dense_map)
 
 BOOST_AUTO_TEST_SUITE_END()
 
-#endif // __AVX2__
+#endif // DENSE_MAP_SUPPORTED
