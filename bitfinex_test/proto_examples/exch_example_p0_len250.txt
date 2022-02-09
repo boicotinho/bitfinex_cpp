@@ -1,6 +1,6 @@
 wscat -c wss://api-pub.bitfinex.com/ws/2
 { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD", "prec": "P0","len": "250", "subId":"999" }
-
+{ "event": "subscribe", "channel": "book", "symbol": "tBTCUSD", "prec": "P0","len": "25", "subId":"0x1122334455667788" }
 
 {"event":"info","version":2,"serverId":"9bf44237-616d-476b-832e-524aba399296","platform":{"status":1}}
 > {"event":"subscribed","channel":"book","chanId":263565,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"250","pair":"BTCUSD"}

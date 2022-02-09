@@ -36,16 +36,9 @@ public:
     // be able to optimize away the virtual calls here and promote them to inline calls.
     // TODO: Maybe this method should include an argument is_raw_book = {true, false, dont_know},
     //       so the method doesn't have to dynamically detect it from the data only.
-    size_t parse_data_and_dispatch_message( // may throw(TruncatedData);
-                char const* raw_data, // pointer to beginning of received data. don't know if contains partial, full or multiple messages
-                char const* end );    // one past end of raw_data
-
-    // Since it will be very rare that a received data will be truncated,
-    // throwing exceptions when that happens is OK and simplifies the logic;
-    struct TruncatedData : std::runtime_error
-        {
-        TruncatedData() : std::runtime_error("Parser::TruncatedData") {}
-        };
+    size_t parse_data_and_dispatch_message(
+                char const* raw_data,       // pointer to beginning of received data. don't know if contains partial, full or multiple messages
+                char const* end) noexcept;  // one past end of raw_data
 
     //======//
 protected:  // To be overridden by derived class:
@@ -88,10 +81,18 @@ protected:  // To be overridden by derived class:
         {}
 
 private:
-    static void skip(char const*& pp, char const* end, char expected_char);
+    // Since it will be very rare that a received data will be truncated,
+    // throwing exceptions when that happens is OK and simplifies the logic;
+    struct TruncatedData : std::runtime_error
+        {
+        TruncatedData() : std::runtime_error("Parser::TruncatedData") {}
+        };
+private:
+    size_t parse_data_and_dispatch_message_w_exception(char const* raw_data, char const* end); // may throw TruncatedData()
     size_t process_single_book_update(channel_tag_t, char const* bgn, char const* end, bool is_bulk);
     size_t process_bulk_book_update(channel_tag_t, char const* bgn, char const* end);
     size_t process_json_event(char const* bgn, char const* end);
+    static void skip(char const*& pp, char const* end, char expected_char);
 };
 
 
@@ -106,6 +107,20 @@ FORCE_INLINE void Parser::skip(char const*& pp, char const* end, char expected_c
 
 //=================================================================================================
 FORCE_INLINE size_t Parser::parse_data_and_dispatch_message(
+        char const* const a_raw_data,
+        char const* const a_end
+        ) noexcept
+{
+    try {
+        return parse_data_and_dispatch_message_w_exception(a_raw_data, a_end);
+    }
+    catch(TruncatedData const &) {
+        return 0;
+    }
+}
+
+//=================================================================================================
+FORCE_INLINE size_t Parser::parse_data_and_dispatch_message_w_exception(
         char const* const a_raw_data,
         char const* const a_end )
 {

@@ -1,42 +1,136 @@
 #include "market_data_feed.h"
-
-// Asking for book checksum:
-// { "event": "conf", "flags": "131072" }
-// Received Response:
-// {"event":"conf","status":"OK"}
-// Check checksum will appear periodically:
-// [266343,"hb"]
-
-// Sending a subscription request:
-// { "event": "subscribe", "channel": "book", "symbol": "tBTCUSD" }
-
-// Received request response:
-// {"event":"info","version":2,"serverId":"ba599674-2ff9-43a0-bb0a-eb3174ab2073","platform":{"status":1}}
-
-// Received subscription response:
-// {"event":"subscribed","channel":"book","chanId":266343,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"25","pair":"BTCUSD"}
-
-// Initial Bulk update:
-// [CHANNEL_ID,[ [PRICE,COUNT,AMOUNT], [PRICE,COUNT,AMOUNT], ... ]]
-// [266343,[[41669,1,0.00057903],[41664,1,0.08608615],[41663,1,0.26620551],[41662,2,0.48411987],[41661,1,0.05],[41660,1,0.25575155],[41658,1,0.01859116],[41657,1,0.30690186],[41655,4,0.52985585],[41654,1,2.11822663],[41653,1,0.42],[41652,2,0.456219],[41651,3,0.21350308],[41648,2,0.606804],[41647,2,1.17590912],[41646,3,0.79012232],[41645,3,0.3149932],[41643,1,0.03],[41641,1,0.01],[41640,2,0.149308],[41639,4,0.77691617],[41638,2,0.06630008],[41637,2,0.2181],[41636,1,0.03],[41635,2,0.24840023],[41670,2,-0.61302395],[41672,1,-0.06002432],[41673,1,-0.060025],[41674,1,-0.120049],[41675,3,-0.38007726],[41676,1,-0.1238],[41677,2,-0.180069],[41679,1,-0.180054],[41681,1,-0.18005075],[41683,1,-1.82767377],[41684,3,-0.34506754],[41685,1,-0.180027],[41686,2,-3.43228823],[41687,2,-0.29007563],[41688,2,-0.750357],[41689,2,-0.35908188],[41691,3,-0.75585496],[41692,4,-0.95047649],[41693,1,-0.754],[41694,2,-0.18603991],[41695,1,-0.1],[41696,1,-0.3869],[41697,2,-0.22604916],[41698,2,-0.628085],[41699,4,-1.01484266]]]
-
-// Delta updates throughout the session:
-// [CHANNEL_ID, [PRICE,COUNT,AMOUNT]]
-// [266343,[41698,3,-0.7317539]]
-// [266343,[41669,0,1]]
-// [266343,[41677,0,-1]]
+#include "core/string_utils.h"
+#include <iostream>
 
 namespace bitfinex
 {
 
-void MarketDataFeed::stop_network_thread() noexcept
+void MarketDataFeed::start_recv_thread(
+    std::chrono::nanoseconds const  a_timeout,
+    std::string const&              a_url)
+{
+    if(m_recv_thread.joinable())
+        throw std::runtime_error("MarketDataFeed thread already started");
+
+    // Connect
+    WebSocketURL parsed_url(a_url);
+    m_ws_client = WebSocketClient(parsed_url);
+
+    // Finally start parallel thread to update the book(s)
+    m_recv_thread = std::thread(&MarketDataFeed::run_loop_recv_thread, this);
+}
+
+void MarketDataFeed::stop_recv_thread() noexcept
+{
+    if(m_recv_thread.joinable())
+    {
+        m_ws_client.close();
+        m_recv_thread.join();
+    }
+}
+
+void MarketDataFeed::run_loop_recv_thread()
+{
+    try
+    {
+        for(;;)
+        {
+            auto const buf = m_ws_client.consume_begin();
+            const size_t consumed =
+                this->parse_data_and_dispatch_message(buf.data, buf.data + buf.len);
+            // Right here these member functions will be called back from parse:
+            //      on_message_event()
+            //      on_message_update_p()
+            m_ws_client.consume_commit(consumed);
+        }
+    }
+    catch(const std::exception& ex)
+    {
+        std::cerr << "MarketDataFeed recv thread exited: "
+                  <<  ex.what() << '\n';
+    }
+}
+
+Subscription MarketDataFeed::subscribe(SubscriptionConfig const& a_subs_cfg)
+{
+    PendingSub* psub = nullptr;
+    int sub_id = -1;
+    {
+        std::lock_guard<SleepMutex> lock(m_subscription_mtx);
+        sub_id = m_next_sub_guid++;
+        psub = &m_pending_subscriptions[sub_id];
+    }
+    auto const rpc_req = a_subs_cfg.as_json_rpc_request(std::to_string(sub_id));
+    m_ws_client.blk_send_str(rpc_req);
+    const bool success = psub->ready_sem.WaitForReadySignalTO(std::chrono::seconds(10));
+
+    Subscription new_sub;
+
+    std::lock_guard<SleepMutex> lock(m_subscription_mtx);
+    auto it = m_pending_subscriptions.find(sub_id);
+    if(it == m_pending_subscriptions.end() || &it->second != psub)
+        throw std::logic_error("MarketDataFeed could not find/match pending subscription");
+    if(!success)
+        return Subscription();
+    new_sub = Subscription(std::move(psub->book_p), psub->cfg);
+    m_pending_subscriptions.erase(it);
+    return new_sub;
+}
+
+void MarketDataFeed::unsubscribe(Subscription& a_subs)
+{
+    auto const& chan_id = a_subs.get_config().channelId;
+    std::string const rpc_req = FormatString(R"({"event": "unsubscribe", "chanId":%u})",chan_id);
+    m_ws_client.blk_send_str(rpc_req);
+}
+
+// Received subscription response:
+void MarketDataFeed::on_message_event(const JsonObj& a_json)
+{
+    std::string event_type;
+    if(!a_json.try_get("event", event_type))
+        return;
+    if(event_type == "subscribed")
+    {
+        // {"event":"subscribed","channel":"book","chanId":65219,"symbol":"tBTCUSD","prec":"P0","freq":"F0","len":"25","subId":"0x1122334455667788","pair":"BTCUSD"}
+        std::string const&  subs_id = a_json.get("subId");
+        channel_tag_t const chan_id = std::atoi(a_json.get("chanId").c_str());
+        std::lock_guard<SleepMutex> lock(m_subscription_mtx);
+        auto it = m_pending_subscriptions.find(std::atoi(subs_id.c_str()));
+        if(it == m_pending_subscriptions.end())
+            return;
+        PendingSub& sub = it->second;
+        sub.cfg.channelId = chan_id;
+        sub.book_p = std::make_shared<level_based::OrderBookP>(sub.cfg.channelId);
+        m_books_p.insert({chan_id, sub.book_p});
+        sub.ready_sem.SignalReady();
+    }
+    else if(event_type == "unsubscribed")
+    {
+        // {"event":"unsubscribed","status":"OK","chanId":173804}
+    }
+    else if(event_type == "info")
+    {
+        // {"event":"info","version":2,"serverId":"ba599674-2ff9-43a0-bb0a-eb3174ab2073","platform":{"status":1}}
+    }
+}
+
+void MarketDataFeed::on_message_update_p(
+    channel_tag_t        channel,        // channel id integer given by exchange during subscription to the instrument.
+    level_based::px_t    price_level,    // Depending on subscr. precision may be: 41785, 41780, 41700, 41000, 40000.
+    size_t               num_orders_at_this_price_level,
+    qx_side_t            qty_and_side,   // if positive we have a BID order at this qty. If negative, we have an ASK order at fabs(qty).
+    bool                 is_bulk_update) // true if this is part of large bulk update message, which gets sent in the beginning of a subscription
 {
 
 }
 
-void MarketDataFeed::start_network_thread(
-        std::chrono::nanoseconds const  a_timeout,
-        std::string const&              a_url)
+void MarketDataFeed::on_message_update_r(
+    channel_tag_t        channel,        // channel id integer given by exchange during subscription to the instrument.
+    order_based::oid_t   order_id,
+    order_based::px_t    order_price,    // Floating point number, exact price for this order, without level-grouping
+    qx_side_t            qty_and_side,
+    bool                 is_bulk_update) // true if this is part of large bulk update message, which gets sent in the beginning of a subscription
 {
 
 }

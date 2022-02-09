@@ -106,8 +106,11 @@ namespace level_based
     class OrderBookP
         : public FeedTraits::MaybeMutex // Empty base class optimization when using NullMutex
     {
+        channel_tag_t  m_channel {};
         OrderBookSideP m_book_sides[2];
     public:
+        explicit OrderBookP(channel_tag_t chid = 0) : m_channel(chid) {}
+        channel_tag_t channel_id() const {return m_channel;}
         void clear()
             {
             FeedTraits::MaybeLockGuard lock(*this);

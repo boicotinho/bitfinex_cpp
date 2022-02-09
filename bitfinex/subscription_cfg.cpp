@@ -4,7 +4,7 @@
 namespace bitfinex
 {
 
-std::string SubscriptionConfig::as_json_rpc_request() const
+std::string SubscriptionConfig::as_json_rpc_request(std::string subId) const
 {
     if(subId.empty())
         return FormatString(
