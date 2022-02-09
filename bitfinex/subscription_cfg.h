@@ -13,9 +13,6 @@ struct SubscriptionConfig
     std::string freq      {"f0"};  // *f0 (real time), f1 (2 seconds)
 
     std::string as_json_rpc_request(std::string subId) const;
-
-    // Supplied once subscribed at the exchange
-    channel_tag_t channelId {};
 };
 
 } // namespace bitfinex

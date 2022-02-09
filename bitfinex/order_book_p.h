@@ -6,6 +6,7 @@
 #include <string>
 #include <cmath>
 #include <memory>
+#include <type_traits>
 
 namespace bitfinex
 {
@@ -13,7 +14,8 @@ namespace bitfinex
 // Level-based book definitions (non-raw book).
 namespace level_based
 {
-    using px_t = uint32_t; // Price type for the level-based order book.
+    using px_t     = uint32_t; // Price type for the level-based order book.
+    using spread_t = typename std::make_signed<px_t>::type;
 
     struct PxQx
     {
@@ -31,6 +33,10 @@ namespace level_based
     struct TOB
     {
         PxQx side[2];
+        constexpr const PxQx& ask() const {return side[(int)eSide::ASK];}
+        constexpr const PxQx& bid() const {return side[(int)eSide::BID];}
+        constexpr spread_t spread() const {return has_both() ? (ask().price_level - bid().price_level) : 0;}
+        constexpr const px_t  mid() const {return has_both() ? (bid().price_level + spread()/2) : 0;}
         // Probably not safe to trade when you don't have both sides of the book.
         constexpr bool has_both() const {return side[0] && side[1];}
         constexpr bool has_side(eSide ss) const {return (bool)side[(int)ss];}
