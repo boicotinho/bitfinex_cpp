@@ -229,7 +229,7 @@
 
         Value& operator[] (Key kk) {return *emplace(kk).first;}
 
-        size_t Size() const {return m_index.scan_number_of_keys();}
+        size_t size() const {return m_index.scan_number_of_keys();}
 
         ~DenseMap()
             {

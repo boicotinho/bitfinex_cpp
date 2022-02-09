@@ -27,12 +27,31 @@ BOOST_AUTO_TEST_CASE(dense_map)
 
     map.emplace(11, 111);
     map.emplace(22, 222);
-    map.emplace(33, 222);
+    map.emplace(33, 333);
 
     auto pval = map.lookup_ptr(22);
     BOOST_REQUIRE(pval);
     BOOST_CHECK_EQUAL(*pval, 222);
-    BOOST_CHECK_EQUAL(3, 7);
+
+    pval = map.lookup_ptr(11);
+    BOOST_REQUIRE(pval);
+    BOOST_CHECK_EQUAL(*pval, 111);
+
+    pval = map.lookup_ptr(33);
+    BOOST_REQUIRE(pval);
+    BOOST_CHECK_EQUAL(*pval, 333);
+
+    //ap.erase(22);
+    //uto pval = map.lookup_ptr(22);
+    //OOST_CHECK(!pval);
+
+    pval = map.lookup_ptr(11);
+    BOOST_REQUIRE(pval);
+    BOOST_CHECK_EQUAL(*pval, 111);
+
+    pval = map.lookup_ptr(33);
+    BOOST_REQUIRE(pval);
+    BOOST_CHECK_EQUAL(*pval, 333);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
