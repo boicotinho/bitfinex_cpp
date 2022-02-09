@@ -3,6 +3,7 @@ project(bitfinex_cpp)
 
 ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 
+# If C++17 with GCC >= 11 is enabled, then use faster standard float parsing
 set(CMAKE_CXX_STANDARD 11)
 
 add_compile_options(

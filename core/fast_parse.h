@@ -2,10 +2,12 @@
 #include "gcc_utils.h"
 #include <stdint.h>
 
-#if (__cplusplus >= 201703L)
-    #include <charconv>
+// from_chars(,,float) only availabe from GCC 11 it seems.
+#if (__cplusplus >= 201703L && __GNUC__ >= 11)
+    #define FAST_PARSE_USE_STD_CHARCONV 1
+    #include <charconv> // std::from_chars(,,float)
 #else
-    #include <cstdlib>
+    #include <cstdlib>  // std::strtof
 #endif
 
 //=================================================================================================
@@ -41,7 +43,7 @@ FORCE_INLINE void fast_parse(
     char const* const   end,
     float&              res)
 {
-#if (__cplusplus >= 201703L)
+#ifdef FAST_PARSE_USE_STD_CHARCONV
     auto [ptr, ec] = std::from_chars(pp, end, res);
     pp = ptr;
 #else
