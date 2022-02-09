@@ -11,6 +11,7 @@ add_compile_options(
     -Wno-sign-compare -Wno-comment -Wno-unknown-pragmas -Wno-unused-parameter
     -Wno-invalid-offsetof -no-integrated-cpp -fno-strict-aliasing
     -Werror -Werror=return-type
+    -fPIC
 )
 
 include_directories(SYSTEM .)
