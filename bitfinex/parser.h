@@ -9,7 +9,7 @@
 #include <stdexcept>
 #include <stdint.h>
 
-namespace bitfenix
+namespace bitfinex
 {
 
 // Parser for the bitfinex protocol based on fast_parse() functions
@@ -213,4 +213,4 @@ FORCE_INLINE size_t Parser::process_single_book_update(
     return pp - a_bgn;
 }
 
-} // namespace bitfenix
+} // namespace bitfinex

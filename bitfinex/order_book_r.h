@@ -1,7 +1,7 @@
 #pragma once
 #include "bitfinex/types.h"
 
-namespace bitfenix
+namespace bitfinex
 {
 // Order-based order book (raw book).
 // Not implemented for now.
@@ -41,4 +41,4 @@ namespace order_based
 
 } // namespace order_based
 
-} // namespace bitfenix
+} // namespace bitfinex

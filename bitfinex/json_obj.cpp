@@ -7,7 +7,7 @@
 #include <boost/json/src.hpp>
 using namespace boost::json;
 
-namespace bitfenix
+namespace bitfinex
 {
 
 JsonObj::ParseError::ParseError(std::string const& details)
@@ -64,4 +64,4 @@ std::string JsonObj::get(std::string const& key) const
     return val;
 }
 
-} // namespace bitfenix
+} // namespace bitfinex

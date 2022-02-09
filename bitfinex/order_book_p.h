@@ -7,7 +7,7 @@
 #include <cmath>
 #include <memory>
 
-namespace bitfenix
+namespace bitfinex
 {
 
 // Level-based book definitions (non-raw book).
@@ -134,4 +134,4 @@ namespace level_based
     };
 
 } // namespace level_based
-} // namespace bitfenix
+} // namespace bitfinex

@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <map>
 
-namespace bitfenix
+namespace bitfinex
 {
 // A slow but simple and minimal representation of
 // JSON objects given their JSON string representation.
@@ -29,4 +29,4 @@ public:
         };
 };
 
-} // namespace bitfenix
+} // namespace bitfinex

@@ -7,7 +7,7 @@ BOOST_AUTO_TEST_SUITE(bitfinex)
 
 BOOST_AUTO_TEST_CASE(empty_book)
 {
-    using namespace bitfenix;
+    using namespace bitfinex;
     using level_based::OrderBookP;
     using level_based::PxQx;
     using level_based::TOB;
@@ -40,7 +40,7 @@ BOOST_AUTO_TEST_CASE(empty_book)
 
 BOOST_AUTO_TEST_CASE(simple_side)
 {
-    using namespace bitfenix;
+    using namespace bitfinex;
     using level_based::OrderBookSideP;
     using level_based::PxQx;
 
@@ -90,7 +90,7 @@ BOOST_AUTO_TEST_CASE(simple_side)
 
 BOOST_AUTO_TEST_CASE(simple_tob)
 {
-    using namespace bitfenix;
+    using namespace bitfinex;
     using level_based::OrderBookP;
     using level_based::PxQx;
 

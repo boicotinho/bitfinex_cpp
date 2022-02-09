@@ -11,7 +11,7 @@
 #include <memory>
 #include <thread>
 
-namespace bitfenix
+namespace bitfinex
 {
 
 // Stable storage for books. Books aren't allowed to change memory location
@@ -60,4 +60,4 @@ public:
 };
 
 
-} // namespace bitfenix
+} // namespace bitfinex

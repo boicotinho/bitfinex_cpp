@@ -26,8 +26,8 @@
 // [266343,[41669,0,1]]
 // [266343,[41677,0,-1]]
 
-namespace bitfenix
+namespace bitfinex
 {
 
 
-} // namespace bitfenix
+} // namespace bitfinex

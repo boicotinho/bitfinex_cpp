@@ -4,7 +4,7 @@
 #include <vector>
 #include <string>
 
-using namespace bitfenix;
+using namespace bitfinex;
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 

@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 
-namespace bitfenix
+namespace bitfinex
 {
 
 struct SubscriptionConfig
@@ -18,4 +18,4 @@ struct SubscriptionConfig
     std::string channelId;
 };
 
-} // namespace bitfenix
+} // namespace bitfinex

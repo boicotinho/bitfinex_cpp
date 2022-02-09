@@ -1,7 +1,7 @@
 #include "subscription_cfg.h"
 #include "core/string_utils.h"
 
-namespace bitfenix
+namespace bitfinex
 {
 
 std::string SubscriptionConfig::as_json_rpc_request() const
@@ -16,4 +16,4 @@ std::string SubscriptionConfig::as_json_rpc_request() const
             symbol.c_str(), precision.c_str(), length.c_str(), subId.c_str());
 }
 
-} // namespace bitfenix
+} // namespace bitfinex

@@ -3,7 +3,7 @@
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 
-using bitfenix::JsonObj;
+using bitfinex::JsonObj;
 
 BOOST_AUTO_TEST_CASE(json_obj_parse_conf_status)
 {

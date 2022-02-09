@@ -1,6 +1,6 @@
 #include "parser.h"
 
-namespace bitfenix
+namespace bitfinex
 {
 
 size_t Parser::process_bulk_book_update(
@@ -66,4 +66,4 @@ size_t Parser::process_json_event(char const* a_bgn, char const* a_end)
     return pp - a_bgn;
 }
 
-} // namespace bitfenix
+} // namespace bitfinex

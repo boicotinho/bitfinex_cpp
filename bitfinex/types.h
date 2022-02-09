@@ -3,7 +3,7 @@
 #include <cstdint>
 #include <mutex>
 
-namespace bitfenix
+namespace bitfinex
 {
 
 using channel_tag_t = uint32_t; // Not necessarily parsed, might just the original channelId raw string, e.g. '[100838,'
@@ -59,4 +59,4 @@ struct FeedTraits
     enum { ERROR_CHECK_FEED = false };
 };
 
-} // namespace bitfenix
+} // namespace bitfinex
