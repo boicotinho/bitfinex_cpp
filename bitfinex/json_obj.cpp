@@ -1,8 +1,8 @@
 #include "json_obj.h"
 #include <sstream>
 
-// This needs boost version 1.75, not sure if we want to bump the version that high up..
-// TODO: Write own simple parser?
+// This needs boost version 1.75, not sure if we want to bump the version that high up...
+// Maybe should write own parser instead?
 #include <boost/json.hpp>
 #include <boost/json/src.hpp>
 using namespace boost::json;
