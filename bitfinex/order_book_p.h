@@ -1,6 +1,7 @@
 #pragma once
 #include "bitfinex/types.h"
 #include "core/gcc_utils.h"
+#include "core/string_utils.h"
 #include <boost/container/flat_map.hpp>
 #include <cstdint>
 #include <string>
@@ -42,6 +43,11 @@ namespace level_based
         constexpr bool has_side(eSide ss) const {return (bool)side[(int)ss];}
         constexpr bool empty() const {return side[0].empty() && side[1].empty();}
         constexpr static TOB Zero() {return {{{0,0},{0,0}}};}
+        std::string to_string() const
+            {
+            return FormatString("[B x%f $%d | $%d x%f S]",
+                bid().total_qty, bid().price_level, ask().price_level, ask().total_qty);
+            }
     };
 
     // Since order deletion does not provide a market opportunity
@@ -123,15 +129,17 @@ namespace level_based
             m_book_sides[eSide::BID].clear();
             m_book_sides[eSide::ASK].clear();
             }
-        void assign_level(px_t price_level, qx_t new_qty)
+        void assign_level(px_t price_level, qx_side_t new_qs)
             {
             FeedTraits::MaybeLockGuard lock(*this);
-            const auto side = qx_to_side(new_qty);
-            m_book_sides[side].assign_level(price_level, std::fabs(new_qty) );
+            eSide const side = qx_to_side(new_qs);
+            qx_t  const qty  = std::fabs(new_qs);
+            m_book_sides[side].assign_level(price_level, qty);
             }
-        void erase_level(px_t price_level, eSide side)
+        void erase_level(px_t price_level, qx_side_t qs)
             {
             FeedTraits::MaybeLockGuard lock(*this);
+            eSide const side = qx_to_side(qs);
             m_book_sides[side].erase_level(price_level);
             }
         TOB get_tob(uint32_t offset)

@@ -140,14 +140,10 @@ void MarketDataFeed::on_message_update_p(
         // Book is not present, yet we get updates for it??
         return;
     }
-    eSide const side = qx_to_side(qty_and_side);
     if(UNLIKELY(0 == num_orders_at_this_price_level))
-        book_ptr->erase_level(price_level, side);
+        book_ptr->erase_level(price_level, qty_and_side);
     else
-    {
-        qx_t const qty = std::fabs(qty_and_side);
-        book_ptr->assign_level(price_level, qty);
-    }
+        book_ptr->assign_level(price_level, qty_and_side);
 }
 
 void MarketDataFeed::on_message_update_r(

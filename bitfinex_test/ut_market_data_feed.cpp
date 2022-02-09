@@ -14,13 +14,17 @@ BOOST_AUTO_TEST_CASE(market_data_feed)
     SubscriptionConfig cfg;
     cfg.symbol = "tBTCUSD";
     Subscription sub = md_feed.subscribe(cfg);
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    for(int ii = 0; ii < 20; ++ii)
+    {
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+        auto tob = sub.get_tob();
+        std::cerr << cfg.symbol << " " << tob.to_string() << "\n";
+    }
     auto tob = sub.get_tob();
     BOOST_CHECK(tob.has_both());
-    BOOST_CHECK_GT(tob.bid().price_level,  30000);
-    BOOST_CHECK_LT(tob.ask().price_level, 100000);
-    BOOST_CHECK_LT(tob.spread(), 10);
-    int u = 32;
+    BOOST_CHECK_GT(tob.bid().price_level, 30000);
+    BOOST_CHECK_LT(tob.ask().price_level, 80000);
+    BOOST_CHECK_LT(tob.spread(), 100);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
