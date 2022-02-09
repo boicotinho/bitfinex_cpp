@@ -22,7 +22,7 @@ void MarketDataFeed::stop_recv_thread() noexcept
 {
     if(m_recv_thread.joinable())
     {
-        m_ws_client.close();
+        m_quit = true;
         m_recv_thread.join();
     }
 }
@@ -31,7 +31,7 @@ void MarketDataFeed::run_loop_recv_thread()
 {
     try
     {
-        for(;;)
+        while(!m_quit)
         {
             auto const buf = m_ws_client.consume_begin();
             const size_t consumed =
