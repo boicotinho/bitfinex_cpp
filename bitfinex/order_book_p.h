@@ -145,7 +145,9 @@ namespace level_based
         channel_tag_t channel_id() const {return m_channel;}
         TOB get_tob(uint32_t offset) const
             {
-            FeedTraits::MaybeLockGuard lock(const_cast<OrderBookP&>(*this));
+            auto const mtx = static_cast<FeedTraits::MaybeMutex*>(
+                             const_cast<OrderBookP*>(this));
+            FeedTraits::MaybeLockGuard lock(*mtx);
             return { m_book_sides[0].get_best_px(offset, (eSide)0)
                    , m_book_sides[1].get_best_px(offset, (eSide)1) };
             }
