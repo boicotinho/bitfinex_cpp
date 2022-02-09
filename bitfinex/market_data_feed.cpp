@@ -29,5 +29,16 @@
 namespace bitfinex
 {
 
+void MarketDataFeed::stop_network_thread() noexcept
+{
+
+}
+
+void MarketDataFeed::start_network_thread(
+        std::chrono::nanoseconds const  a_timeout,
+        std::string const&              a_url)
+{
+
+}
 
 } // namespace bitfinex
