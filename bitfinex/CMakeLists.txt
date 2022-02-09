@@ -7,7 +7,7 @@ project("bitfinex")
 #   <boost/container/flat_map>  boost v. 1.49?  https://www.boost.org/doc/libs/1_78_0/doc/html/container/release_notes.html  https://www.boost.org/doc/libs/1_78_0/doc/html/container.html
 #   <boost/test>                boost v. 1.21   https://www.boost.org/doc/libs/1_78_0/libs/test/doc/html/index.html
 #   Redhat 7 usually have 1.53, but boost/beast is an important lib here.
-find_package(Boost 1.66 COMPONENTS)
+find_package(Boost 1.75 COMPONENTS)
 find_package(Threads REQUIRED)
 
 file (GLOB SOURCE_FILES *.cpp)
