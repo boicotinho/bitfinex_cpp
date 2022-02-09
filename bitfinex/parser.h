@@ -13,6 +13,18 @@ namespace bitfenix
 {
 
 // Parser for the bitfinex protocol based on fast_parse() functions
+// Perf 1,000 x P0 parse message: '[266343,[41698,3,-0.7317539]'
+//     0.0 % :          387 cc
+//    10.0 % :          399 cc
+//    50.0 % :          411 cc
+//    75.0 % :          414 cc
+//    90.0 % :          417 cc
+//    99.0 % :          786 cc
+//    99.5 % :        1,068 cc
+//    99.8 % :       15,309 cc
+//    99.9 % :       24,351 cc
+//   100.0 % :       24,351 cc
+//   average :          470 cc
 class Parser
 {
 public:

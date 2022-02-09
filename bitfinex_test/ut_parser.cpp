@@ -1,5 +1,6 @@
 #include "test_utils.h"
 #include "bitfinex/parser.h"
+#include "core/profile_utils.h"
 #include <vector>
 #include <string>
 
@@ -137,6 +138,58 @@ BOOST_AUTO_TEST_CASE(parser_p0)
 BOOST_AUTO_TEST_CASE(parser_r0)
 {
     TestParser parser;
+}
+
+class ProfilingParser : public Parser
+{
+public:
+    std::vector<CpuTimeStamp>  m_timings;
+    void parse_string_dispatch_message(const char* str)
+    {
+        auto const bgn = str;
+        auto const end = bgn + strlen(str);
+        auto const t0 = rdtscp();
+        this->parse_data_and_dispatch_message(bgn, end);
+        auto const t1 = rdtscp();
+        m_timings.emplace_back(t1 - t0);
+    }
+private:
+    virtual void on_message_update_p(
+        channel_tag_t        channel,
+        level_based::px_t    price_level,
+        size_t               num_orders,
+        qx_side_t            qty_and_side,
+        bool                 is_bulk_update) override
+    {
+        COMPILER_BARRIER();
+        volatile int dummy = 1;
+        (void) dummy;
+        COMPILER_BARRIER();
+    }
+    virtual void on_message_update_r(
+        channel_tag_t        channel,
+        order_based::oid_t   order_id,
+        order_based::px_t    order_price,
+        qx_side_t            qty_and_side,
+        bool                 is_bulk_update) override
+    {
+        COMPILER_BARRIER();
+        volatile int dummy = 1;
+        (void) dummy;
+        COMPILER_BARRIER();
+    }
+};
+
+AUTO_TEST_MICROBENCH(profile_parser_p0)
+{
+    const int NN = 1000;
+    ProfilingParser parser;
+    parser.m_timings.reserve(NN);
+    for(int ii = 0; ii < NN; ++ii)
+    {
+        parser.parse_string_dispatch_message("[266343,[41698,3,-0.7317539]]");
+    }
+    std::cout << FormatCcTimingsTable(parser.m_timings, "P0 parse message: '[266343,[41698,3,-0.7317539]'") << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()
