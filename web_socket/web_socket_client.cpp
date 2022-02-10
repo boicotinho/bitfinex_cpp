@@ -126,7 +126,7 @@ WebSocketClient::ReceivedData
 WebSocketClient::consume_begin()
 {
     if(!m_impl)
-        return {};
+        return {nullptr, 0};
     return m_impl->consume_begin();
 }
 
