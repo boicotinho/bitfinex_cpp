@@ -5,7 +5,6 @@
             "name": "bitfinex_test",
             "program": "${workspaceFolder}/build_Debug/bitfinex_test/bitfinex_test",
             "args": [
-                "s", "1"
             ],
             "preLaunchTask": "build_debug",
             "cwd": "${workspaceFolder}",

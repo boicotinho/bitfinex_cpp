@@ -87,4 +87,15 @@
     },
     "C_Cpp.default.cppStandard": "c++11",
     "C_Cpp.default.cStandard": "c11",
+    "cSpell.words": [
+        "bitfinex",
+        "BTCUSD",
+        "tBTCUSD",
+        "WSPC"
+    ],
+    "editor.renderLineHighlight": "all",
+    "workbench.colorCustomizations": {
+        "editor.lineHighlightBackground": "#a7800228",
+        //"editor.lineHighlightBorder": "#ffd45d28"
+    },
 }
