@@ -5,6 +5,55 @@ BOOST_AUTO_TEST_SUITE(bitfinex)
 
 using bitfinex::JsonObj;
 
+BOOST_AUTO_TEST_CASE(json_obj_parse_empty)
+{
+    JsonObj obj(R"({})");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_str)
+{
+    JsonObj obj(R"({"event":"abc"})");
+    BOOST_CHECK_EQUAL(obj.get("event"), "abc");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_two)
+{
+    JsonObj obj(R"({"event1":"111","event2":"222"})");
+    BOOST_CHECK_EQUAL(obj.get("event1"), "111");
+    BOOST_CHECK_EQUAL(obj.get("event2"), "222");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_spaces)
+{
+    JsonObj obj(R"( { "event1" : "111"  ,  "event2" : "222" } )");
+    BOOST_CHECK_EQUAL(obj.get("event1"), "111");
+    BOOST_CHECK_EQUAL(obj.get("event2"), "222");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_keyword)
+{
+    JsonObj obj(R"({"event":null})");
+    BOOST_CHECK_EQUAL(obj.get("event"), "null");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_num)
+{
+    JsonObj obj(R"({"Pi":3.1415})");
+    BOOST_CHECK_EQUAL(obj.get("Pi"), "3.1415");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_array)
+{
+    JsonObj obj(R"({"cars" : ["Ford", "BMW", "Fiat"]})");
+    BOOST_CHECK_EQUAL(obj.get("cars"), R"(["Ford", "BMW", "Fiat"])");
+}
+
+BOOST_AUTO_TEST_CASE(json_obj_parse_sub_obj)
+{
+    JsonObj obj(R"({"platform" : {"status":1}})");
+    BOOST_CHECK_EQUAL(obj.get("platform"), R"({"status":1})");
+}
+
 BOOST_AUTO_TEST_CASE(json_obj_parse_conf_status)
 {
     const auto jstr = R"({"event":"conf","status":"OK"})";
