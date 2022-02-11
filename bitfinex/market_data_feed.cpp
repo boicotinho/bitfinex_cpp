@@ -7,6 +7,7 @@ namespace bitfinex
 
 void MarketDataFeed::start_recv_thread( std::string const& a_url)
 {
+    std::cout << "Starting MarketDataFeed...\n";
     if(m_recv_thread.joinable())
         throw std::runtime_error("MarketDataFeed thread already started");
 
@@ -22,13 +23,19 @@ void MarketDataFeed::stop_recv_thread() noexcept
 {
     if(m_recv_thread.joinable())
     {
+        std::cout << "Stopping MarketDataFeed...\n";
         m_quit = true;
         m_recv_thread.join();
+    }
+    else
+    {
+        std::cout << "MarketDataFeed was already stopped.\n";
     }
 }
 
 void MarketDataFeed::run_loop_recv_thread()
 {
+    std::cout << "MarketDataFeed recv thread started\n";
     try
     {
         while(!m_quit)
@@ -47,6 +54,7 @@ void MarketDataFeed::run_loop_recv_thread()
         std::cerr << "MarketDataFeed recv thread exited: "
                   <<  ex.what() << '\n';
     }
+    std::cerr << "MarketDataFeed recv thread exited normally.\n";
 }
 
 OrderBookPPtr MarketDataFeed::subscribe(
