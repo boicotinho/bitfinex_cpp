@@ -37,7 +37,8 @@ void MarketDataFeed::stop_recv_thread() noexcept
 
 void MarketDataFeed::run_loop_recv_thread()
 {
-    std::cout << "MarketDataFeed recv thread started\n";
+    std::cerr << "MarketDataFeed recv thread started, build "
+              << __DATE__ << " " <<  __TIME__ << " \n";
     try
     {
         while(!m_quit)
