@@ -7,21 +7,23 @@ namespace bitfinex
 
 void MarketDataFeed::start_recv_thread( std::string const& a_url)
 {
-    std::cout << "Starting MarketDataFeed...\n";
-    if(m_recv_thread.joinable())
-        throw std::runtime_error("MarketDataFeed thread already started");
+    if(++m_started == 1)
+    {
+        std::cout << "Starting MarketDataFeed...\n";
+        // Connect
+        WebSocketURL parsed_url(a_url);
+        m_ws_client = WebSocketClient(parsed_url);
 
-    // Connect
-    WebSocketURL parsed_url(a_url);
-    m_ws_client = WebSocketClient(parsed_url);
-
-    // Finally start parallel thread to update the book(s)
-    m_recv_thread = std::thread(&MarketDataFeed::run_loop_recv_thread, this);
+        // Finally start parallel thread to update the book(s)
+        m_recv_thread = std::thread(&MarketDataFeed::run_loop_recv_thread, this);
+    }
+    else
+        std::cout << "Already started MarketDataFeed...\n";
 }
 
 void MarketDataFeed::stop_recv_thread() noexcept
 {
-    if(m_recv_thread.joinable())
+    if(--m_started == 0)
     {
         std::cout << "Stopping MarketDataFeed...\n";
         m_quit = true;
@@ -61,6 +63,11 @@ OrderBookPPtr MarketDataFeed::subscribe(
         SubscriptionConfig const&      a_subs_cfg,
         std::chrono::nanoseconds const a_timeout)
 {
+    if(!m_started.load())
+    {
+        std::cerr << "MarketDataFeed::subscribe failed, recv thread ins't started.\n";
+        return {};
+    }
     int sub_id = -1;
     std::future<OrderBookPPtr> fut;
     {
