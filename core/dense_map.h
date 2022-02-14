@@ -1,8 +1,10 @@
 #pragma once
 
-#if defined(__AVX2__)
-    #define DENSE_MAP_SUPPORTED 1
-#endif
+// Disabled for now as a safety measure.
+//      -- How should we deal with -march=native?
+//#if defined(__AVX2__)
+//    #define DENSE_MAP_SUPPORTED 1
+//#endif
 
 #if !(DENSE_MAP_SUPPORTED)
     #include <unordered_map>
