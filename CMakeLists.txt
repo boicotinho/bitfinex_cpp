@@ -21,10 +21,5 @@ add_compile_options(
 include_directories(SYSTEM .)
 
 add_subdirectory(core)
-add_subdirectory(core_test)
-
 add_subdirectory(web_socket)
-add_subdirectory(web_socket_test)
-
-add_subdirectory(bitfinex)
-add_subdirectory(bitfinex_test)
+add_subdirectory(marketlinks)

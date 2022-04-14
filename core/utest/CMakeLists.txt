@@ -1,4 +1,4 @@
-project("core_test")
+project("core_utest")
 
 find_package(Threads REQUIRED)
 

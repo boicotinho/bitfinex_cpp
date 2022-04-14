@@ -15,10 +15,10 @@ if [[ -f "${GCC_TOOLSET}" ]]; then
     source ${GCC_TOOLSET}
 fi
 
-echo "USING: $(python --version)" 
-echo "USING: $(gcc --version)" 
+echo "USING: $(python --version)"
+echo "USING: $(gcc --version)"
 
 mkdir -p build_${CFG}
 cd build_${CFG}
 cmake -DCMAKE_BUILD_TYPE=${CFG} ../
-make
+make -j

@@ -1,4 +1,4 @@
-project("bitfinex_test")
+project("bitfinex_utest")
 
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.h)

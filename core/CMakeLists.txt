@@ -9,3 +9,4 @@ add_library( ${PROJECT_NAME}
     ${SOURCE_FILES}
 )
 
+add_subdirectory(utest)

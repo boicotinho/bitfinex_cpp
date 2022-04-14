@@ -42,8 +42,8 @@ struct FeedTraits
     // Later on however, it would be advantageous if our thread calls into the
     // trading strategy when there's a relevant market data event, greatly
     // improving performance.
-    // Replacing MaybeMytex with NullMutex will complemetely remove the code
-    // and data that would oterhwise be needed for thread safety.
+    // Replacing MaybeMutex with NullMutex will completely remove the code
+    // and data that would otherwise be needed for thread safety.
     using MaybeMutex     = SpinMutex;
     using MaybeLockGuard = std::lock_guard<SpinMutex>;
 

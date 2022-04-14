@@ -1,5 +1,5 @@
 #include "test_utils.h"
-#include "bitfinex/json_obj.h"
+#include "marketlinks/common/json_obj.h"
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 

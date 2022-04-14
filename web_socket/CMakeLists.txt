@@ -21,3 +21,4 @@ target_link_libraries( ${PROJECT_NAME}
 
 # Temp for tls certificate verification lib
 # target_include_directories( ${PROJECT_NAME} SYSTEM PRIVATE /home/fabio/dev/certify/include/ ${OPENSSL_INCLUDE_DIR} )
+add_subdirectory(utest)
