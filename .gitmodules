@@ -1,0 +1,6 @@
+[submodule "extern/libwebsockets"]
+	path = extern/libwebsockets
+	url = https://libwebsockets.org/repo/libwebsockets
+[submodule "extern/wolfssl"]
+	path = extern/wolfssl
+	url = https://github.com/wolfSSL/wolfssl.git
