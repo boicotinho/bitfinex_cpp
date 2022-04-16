@@ -1,3 +1,5 @@
 build*
 **/~*
+**/*.vpp.bak_*
+**/*.vpp.lck
 Thumbs.db*
