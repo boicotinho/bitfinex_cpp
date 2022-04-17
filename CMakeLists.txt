@@ -38,7 +38,7 @@ message("@@@@@@@@@@@@@ SSL_HDR_COPY_RES         = ${SSL_HDR_COPY_RES}")
 message("@@@@@@@@@@@@@ LWS_WOLFSSL_LIBRARIES    = ${LWS_WOLFSSL_LIBRARIES}")
 message("@@@@@@@@@@@@@ LWS_WOLFSSL_INCLUDE_DIRS = ${LWS_WOLFSSL_INCLUDE_DIRS}")
 add_subdirectory(extern/libwebsockets)
-
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/extern/libwebsockets/include) # lws_config.h is dynamically generated
 
 ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 

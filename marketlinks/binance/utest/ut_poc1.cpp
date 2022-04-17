@@ -2,11 +2,27 @@
 #include "web_socket/web_socket_client.h"
 #include "core/profile_utils.h"
 #include "core/string_utils.h"
+#include <libwebsockets.h>
 
 // self.binance_futures_ws_address = "wss://fstream.binance.com"
 // self.binance_spot_ws_address = "wss://stream.binance.com:9443"
 
 BOOST_AUTO_TEST_SUITE(binance)
+
+// Lws must have been built with
+//  LWS_ROLE_WS=1
+//  LWS_WITH_SECURE_STREAMS=1
+//  LWS_WITHOUT_EXTENSIONS=0
+// If you want to mimic OpenSSL behavior of having `SSL_connect` succeed even if
+// verifying the server fails and reducing security you can do this by calling:
+//
+// wolfSSL_CTX_set_verify(ctx, WOLFSSL_VERIFY_NONE, NULL);
+//
+// before calling `wolfSSL_new();`. Though it's not recommended.
+BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
+{
+
+}
 
 // wss://stream.binance.com:9443/ws/bnbbtc@depth
 BOOST_AUTO_TEST_CASE(simple_print)

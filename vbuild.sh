@@ -20,5 +20,5 @@ echo "USING: $(gcc --version)"
 
 mkdir -p build_${CFG}
 cd build_${CFG}
-cmake -DCMAKE_BUILD_TYPE=${CFG} ../
-make -j
+nice cmake -DCMAKE_BUILD_TYPE=${CFG} ../
+nice make -j
