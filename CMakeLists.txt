@@ -6,6 +6,9 @@ project(bitfinex_cpp)
 #SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 #SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}/lib")
 
+#===============================================================================
+# WolfSSL
+#===============================================================================
 # TODO: Make CMakeLists.txt just for wolfssl config
 #set(WOLFSSL_TLS13 OFF)
 #set(WOLFSSL_OPENSSLCOEXIST OFF)
@@ -15,8 +18,14 @@ set(BUILD_SHARED_LIBS OFF)
 set(WOLFSSL_CRYPT_TESTS OFF)
 add_subdirectory(extern/wolfssl)
 
-# TODO: Make CMakeLists.txt just for libwebsockets config
+#===============================================================================
 # LIBWEBSOCKETS
+#===============================================================================
+# TODO: Make CMakeLists.txt just for libwebsockets config
+set(LWS_ROLE_WS=1)
+set(LWS_WITH_SECURE_STREAMS=1)
+set(LWS_WITHOUT_EXTENSIONS=0)
+#----
 set(DISABLE_WERROR ON )
 set(LWS_WITH_STATIC ON )
 set(LWS_WITH_SHARED OFF )
@@ -25,6 +34,7 @@ set(LWS_WITHOUT_TEST_SERVER ON )
 set(LWS_WITHOUT_TEST_SERVER_EXTPOLL ON )
 set(LWS_WITHOUT_TEST_PING ON )
 set(LWS_WITHOUT_TEST_CLIENT ON )
+#----
 set(LWS_WITH_WOLFSSL ON )
 set(LWS_WOLFSSL_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/.wolfssl_include ) # copy otherwise CMake complains
 set(LWS_WOLFSSL_LIBRARIES    ${CMAKE_CURRENT_BINARY_DIR}/extern/wolfssl/libwolfssl.a )
@@ -39,6 +49,8 @@ message("@@@@@@@@@@@@@ LWS_WOLFSSL_LIBRARIES    = ${LWS_WOLFSSL_LIBRARIES}")
 message("@@@@@@@@@@@@@ LWS_WOLFSSL_INCLUDE_DIRS = ${LWS_WOLFSSL_INCLUDE_DIRS}")
 add_subdirectory(extern/libwebsockets)
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/extern/libwebsockets/include) # lws_config.h is dynamically generated
+
+#===============================================================================
 
 ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 

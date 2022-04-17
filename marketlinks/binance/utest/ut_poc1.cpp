@@ -2,7 +2,7 @@
 #include "web_socket/web_socket_client.h"
 #include "core/profile_utils.h"
 #include "core/string_utils.h"
-#include <libwebsockets.h>
+//#include <libwebsockets.h>
 
 // self.binance_futures_ws_address = "wss://fstream.binance.com"
 // self.binance_spot_ws_address = "wss://stream.binance.com:9443"
@@ -19,10 +19,10 @@ BOOST_AUTO_TEST_SUITE(binance)
 // wolfSSL_CTX_set_verify(ctx, WOLFSSL_VERIFY_NONE, NULL);
 //
 // before calling `wolfSSL_new();`. Though it's not recommended.
-BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
-{
-
-}
+// https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
+//BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
+//{
+//}
 
 // wss://stream.binance.com:9443/ws/bnbbtc@depth
 BOOST_AUTO_TEST_CASE(simple_print)
