@@ -22,9 +22,9 @@ add_subdirectory(extern/wolfssl)
 # LIBWEBSOCKETS
 #===============================================================================
 # TODO: Make CMakeLists.txt just for libwebsockets config
-set(LWS_ROLE_WS=1)
-set(LWS_WITH_SECURE_STREAMS=1)
-set(LWS_WITHOUT_EXTENSIONS=0)
+# set(LWS_ROLE_WS=1)
+# set(LWS_WITH_SECURE_STREAMS=1)
+# set(LWS_WITHOUT_EXTENSIONS=0)
 #----
 set(DISABLE_WERROR ON )
 set(LWS_WITH_STATIC ON )
