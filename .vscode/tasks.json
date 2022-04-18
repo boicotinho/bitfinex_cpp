@@ -6,7 +6,7 @@
         {
             "label": "build_debug",
             "type": "shell",
-            "command": "./vbuild.sh Debug",
+            "command": "rm -rf build_Debug; ./vbuild.sh Debug",
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -17,6 +17,6 @@
                 "kind": "build",
                 "isDefault": true
             }
-        },   
+        },
     ]
 }

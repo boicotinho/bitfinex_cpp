@@ -83,7 +83,9 @@
         "*.natvis": "xml",
         "unordered_set": "cpp",
         "any": "cpp",
-        "codecvt": "cpp"
+        "codecvt": "cpp",
+        "options.h": "c",
+        "settings.h": "c"
     },
     "C_Cpp.default.cppStandard": "c++11",
     "C_Cpp.default.cStandard": "c11",
