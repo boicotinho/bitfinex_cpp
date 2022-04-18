@@ -4,6 +4,7 @@
 #include "core/string_utils.h"
 #include <libwebsockets.h>
 //#include <wolfssl/ssl.h>
+#include <sys/epoll.h>
 
 // self.binance_futures_ws_address = "wss://fstream.binance.com"
 // self.binance_spot_ws_address = "wss://stream.binance.com:9443"
@@ -26,9 +27,19 @@ BOOST_AUTO_TEST_SUITE(binance)
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
 
+enum class eMode
+{
+    SPIN,
+    POLL,
+    EPOLL,
+};
+
+eMode const g_ep_mode = eMode::EPOLL;
+
 struct EpollSet
 {
-    int m_epoll_fd{};
+    int m_epoll_fd {-1};
+    epoll_event ep_events[64];
     // poll impl, rather than epoll, just for test
     lws_pollfd pollfds[64];
     int count_pollfds;
@@ -50,25 +61,35 @@ lws_pollfd* custom_poll_find_fd(EpollSet *cpcx, lws_sockfd_type fd)
 
 int custom_poll_add_fd(EpollSet *cpcx, lws_sockfd_type fd, int events)
 {
-	struct lws_pollfd *pfd;
+	lwsl_info("%s: ADD fd %d, ev 0x%x\n", __func__, fd, events);
 
-	lwsl_info("%s: ADD fd %d, ev %d\n", __func__, fd, events);
+    //if (g_ep_mode == eMode::POLL)
+    {
+    	lws_pollfd *pfd = custom_poll_find_fd(cpcx, fd);
+        if (pfd) {
+            lwsl_info("%s: ADD fd %d already in ext table\n", __func__, fd);
+            return 1;
+        }
 
-	pfd = custom_poll_find_fd(cpcx, fd);
-	if (pfd) {
-		lwsl_err("%s: ADD fd %d already in ext table\n", __func__, fd);
-		return 1;
-	}
+        if (cpcx->count_pollfds == LWS_ARRAY_SIZE(cpcx->pollfds)) {
+            lwsl_info("%s: no room left\n", __func__);
+            return 1;
+        }
 
-	if (cpcx->count_pollfds == LWS_ARRAY_SIZE(cpcx->pollfds)) {
-		lwsl_err("%s: no room left\n", __func__);
-		return 1;
-	}
-
-	pfd = &cpcx->pollfds[cpcx->count_pollfds++];
-	pfd->fd = fd;
-	pfd->events = (short)events;
-	pfd->revents = 0;
+        pfd = &cpcx->pollfds[cpcx->count_pollfds++];
+        pfd->fd = fd;
+        pfd->events = (short)events;
+        pfd->revents = 0;
+    }
+    if (g_ep_mode == eMode::EPOLL)
+    //else
+    {
+        epoll_event evt {};
+        evt.data.fd = fd;
+        evt.events = events | EPOLLET; // events = POLLIN = 1, EPOLLIN also = 1
+        int res = epoll_ctl(cpcx->m_epoll_fd, EPOLL_CTL_ADD, fd, &evt);
+        int uu = 32;
+    }
 
 	return 0;
 }
@@ -82,7 +103,7 @@ custom_poll_del_fd(EpollSet *cpcx, lws_sockfd_type fd)
 
 	pfd = custom_poll_find_fd(cpcx, fd);
 	if (!pfd) {
-		lwsl_err("%s: DEL fd %d missing in ext table\n", __func__, fd);
+		lwsl_info("%s: DEL fd %d missing in ext table\n", __func__, fd);
 		return 1;
 	}
 
@@ -91,16 +112,23 @@ custom_poll_del_fd(EpollSet *cpcx, lws_sockfd_type fd)
 
 	cpcx->count_pollfds--;
 
+    if (g_ep_mode == eMode::EPOLL)
+    {
+        int res = epoll_ctl(cpcx->m_epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+        int eno = errno;
+        int uu = 32;
+    }
+
 	return 0;
 }
 
 static int
 custom_poll_change_fd(EpollSet *cpcx, lws_sockfd_type fd,
-		     int events_add, int events_remove)
+		     int events_add, int events_remove, unsigned int flags)
 {
 	struct lws_pollfd *pfd;
 
-	lwsl_info("%s: CHG fd %d, ev_add %d, ev_rem %d\n", __func__, fd,
+	lwsl_info("%s: CHG fd %d, ev_add 0x%x, ev_rem 0x%x\n", __func__, fd,
 			events_add, events_remove);
 
 	pfd = custom_poll_find_fd(cpcx, fd);
@@ -109,11 +137,24 @@ custom_poll_change_fd(EpollSet *cpcx, lws_sockfd_type fd,
 
 	pfd->events = (short)((pfd->events & (~events_remove)) | events_add);
 
+    if(g_ep_mode == eMode::EPOLL)// else
+    {
+        epoll_event evt {};
+        evt.data.fd = fd;
+        evt.events = pfd->events | EPOLLET;
+        int res = epoll_ctl(cpcx->m_epoll_fd, EPOLL_CTL_MOD, evt.data.fd, &evt);
+        if(res < 0)
+            perror("custom_poll_change_fd failed: ");
+        int eno = errno;
+        int uu = 32;
+    }
+
 	return 0;
 }
 
 int init_pt_custom(struct lws_context *cx, void *_loop, int tsi)
 {
+    lwsl_info("%s", __func__);
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
 					     lws_evlib_tsi_to_evlib_pt(cx, tsi);
 
@@ -126,6 +167,7 @@ int init_pt_custom(struct lws_context *cx, void *_loop, int tsi)
 
 int sock_accept_custom(struct lws *wsi)
 {
+    lwsl_info("%s fd = %d", __func__, lws_get_socket_fd(wsi));
 	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
 						lws_evlib_wsi_to_evlib_pt(wsi);
 
@@ -134,34 +176,43 @@ int sock_accept_custom(struct lws *wsi)
 
 void io_custom(struct lws *wsi, unsigned int flags)
 {
-	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-						lws_evlib_wsi_to_evlib_pt(wsi);
-	int e_add = 0, e_remove = 0;
+    lwsl_info("%s fd = %d, flags = 0x%x", __func__, lws_get_socket_fd(wsi), flags);
+    auto const priv = (pt_eventlibs_custom*) lws_evlib_wsi_to_evlib_pt(wsi);
+    //if(g_ep_mode == eMode::POLL)
+    {
+        int e_add = 0, e_remove = 0;
 
-	if (flags & LWS_EV_START) {
-		if (flags & LWS_EV_WRITE)
-			e_add |= POLLOUT;
+        if (flags & LWS_EV_START) {
+            if (flags & LWS_EV_WRITE)
+                e_add |= POLLOUT;
 
-		if (flags & LWS_EV_READ)
-			e_add |= POLLIN;
-	} else {
-		if (flags & LWS_EV_WRITE)
-			e_remove |= POLLOUT;
+            if (flags & LWS_EV_READ)
+                e_add |= POLLIN;
+        } else {
+            if (flags & LWS_EV_WRITE)
+                e_remove |= POLLOUT;
 
-		if (flags & LWS_EV_READ)
-			e_remove |= POLLIN;
-	}
+            if (flags & LWS_EV_READ)
+                e_remove |= POLLIN;
+        }
 
-	custom_poll_change_fd(priv->io_loop, lws_get_socket_fd(wsi),
-			      e_add, e_remove);
+        custom_poll_change_fd(priv->io_loop, lws_get_socket_fd(wsi),
+                    e_add, e_remove, flags);
+    }
+
 }
 
 static int
 wsi_logical_close_custom(struct lws *wsi)
 {
-	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
-						lws_evlib_wsi_to_evlib_pt(wsi);
-	return custom_poll_del_fd(priv->io_loop, lws_get_socket_fd(wsi));
+    lwsl_info("%s fd = %d", __func__, lws_get_socket_fd(wsi));
+    //if(g_ep_mode == eMode::POLL)
+    {
+        struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
+                            lws_evlib_wsi_to_evlib_pt(wsi);
+        return custom_poll_del_fd(priv->io_loop, lws_get_socket_fd(wsi));
+    }
+    return 0;
 }
 
 
@@ -193,10 +244,12 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
             "custom event loop",
             "lws_evlib_plugin",
             LWS_BUILD_HASH,
-            LWS_PLUGIN_API_MAGIC},
+            LWS_PLUGIN_API_MAGIC
+        },
         //.ops	=
         &event_loop_ops_custom};
     ws_info.event_lib_custom = &evlib_custom; // bind lws to our custom event
+    g_epoll_set.m_epoll_fd = epoll_create1(0);
 
     // define our connection info
     struct ConnectionInfo
@@ -348,7 +401,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
             // if (lws_retry_sul_schedule(context, 0, sul, &retry,
             //             on_connect_client, &mco->retry_count))
             //{
-            //     lwsl_err("%s: connection attempts exhausted\n", __func__);
+            //     lwsl_info("%s: connection attempts exhausted\n", __func__);
             //     interrupted = 1;
             // }
         }
@@ -359,15 +412,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     // schedule the first client connection attempt to happen immediately
     lws_sul_schedule(context, 0, &g_conn_info.sul, on_connect_client, 1);
 
-    enum class eMode
-    {
-        SPIN,
-        EPOLL
-    };
-
-    eMode const mode = eMode::EPOLL;
-
-    if (mode == eMode::SPIN)
+    if (g_ep_mode == eMode::SPIN)
     {
         int nn = 0;
         while (nn >= 0) // && !interrupted)
@@ -383,39 +428,64 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 
             EpollSet *const cpcx = &g_epoll_set;
 
-            n = poll(cpcx->pollfds, (nfds_t)cpcx->count_pollfds, n);
+            if (g_ep_mode == eMode::POLL)
+                n = poll(cpcx->pollfds, (nfds_t)cpcx->count_pollfds, n);
+            else
+                n = epoll_wait(cpcx->m_epoll_fd, cpcx->ep_events, 64, n);
 
             lwsl_warn("%s: exiting poll ret %d\n", __func__, n);
 
             if (n <= 0)
                 continue;
 
-            for (n = 0; n < cpcx->count_pollfds; n++)
             {
-                lws_sockfd_type fd = cpcx->pollfds[n].fd;
-                int m;
-
-                if (!cpcx->pollfds[n].revents)
-                    continue;
-
-                m = lws_service_fd(context, &cpcx->pollfds[n]);
-
-                /* if something closed, retry this slot since may have been
-                 * swapped with end fd */
-                if (m && cpcx->pollfds[n].fd != fd)
-                    n--;
-
-                if (m < 0)
-                    /* lws feels something bad happened, but
-                     * the outer application may not care */
-                    continue;
-                if (!m)
+                int const end = (g_ep_mode == eMode::EPOLL)
+                              ? n
+                              : cpcx->count_pollfds;
+                for (int ii = 0; ii < end; ++ii)
                 {
-                    /* check if it is an fd owned by the
-                     * application */
+                    pollfd evt2 = {};
+
+                    if(g_ep_mode == eMode::EPOLL)
+                    {
+                        const epoll_event& evt = cpcx->ep_events[ii];
+                        evt2.fd      = evt.data.fd;
+                        evt2.events  = evt.events;
+                        evt2.revents = evt.events;
+                    }
+                    else
+                    {
+                        evt2 = cpcx->pollfds[ii];
+                    }
+
+                    lws_sockfd_type fd = evt2.fd;
+
+                    if (!evt2.revents)
+                        continue;
+
+                    lwsl_warn("@@@ exec: fd = %d, evt=%x", fd, evt2.events);
+
+                    int m = lws_service_fd(context, &evt2);
+
+                    /* if something closed, retry this slot since may have been
+                    * swapped with end fd */
+                    if (m && evt2.fd != fd)
+                        ii--;
+
+                    if (m < 0)
+                        /* lws feels something bad happened, but
+                        * the outer application may not care */
+                        continue;
+                    if (!m)
+                    {
+                        /* check if it is an fd owned by the
+                        * application */
+                    }
                 }
             }
         }
+
+        close(g_epoll_set.m_epoll_fd);
     }
 
     lws_context_destroy(context);
