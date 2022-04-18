@@ -36,7 +36,7 @@ set(LWS_WITHOUT_TEST_PING ON )
 set(LWS_WITHOUT_TEST_CLIENT ON )
 #----
 set(LWS_WITH_WOLFSSL ON )
-set(LWS_WOLFSSL_INCLUDE_DIRS /tmp/cpp_market/${USER}/${CMAKE_CURRENT_SOURCE_DIR}/.wolfssl_include ) # copy otherwise CMake complains
+set(LWS_WOLFSSL_INCLUDE_DIRS /tmp/cpp_market${CMAKE_CURRENT_SOURCE_DIR}/.wolfssl_include ) # copy otherwise CMake complains
 set(LWS_WOLFSSL_LIBRARIES    ${CMAKE_CURRENT_BINARY_DIR}/extern/wolfssl/libwolfssl.a )
 execute_process(COMMAND mkdir -p ${LWS_WOLFSSL_INCLUDE_DIRS})
 execute_process(COMMAND
