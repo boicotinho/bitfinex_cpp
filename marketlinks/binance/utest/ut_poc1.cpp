@@ -16,6 +16,9 @@
 //      btcusdt@bookTicker
 //      btcusdt@aggTrade
 
+// extern/libwebsockets/READMEs/README.event-loops-intro.md
+// extern/libwebsockets/minimal-examples-lowlevel/http-server/minimal-http-server-eventlib-custom/minimal-http-server.c
+
 BOOST_AUTO_TEST_SUITE(binance)
 
 // Lws must have been built with
