@@ -541,7 +541,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     }
 
     auto t_end = Clock::now();
-    std::cerr << FormatCcTimingsTable(ts, "lws_service(,-1)");
+    std::cerr << format_cc_timings_table(ts, "lws_service(,-1)");
     double hz = double(g_msg_recv) / double((t_end - t_bgn).count() / 1e9);
     std::cerr << "\nep: " << loop_calls << ", cb: " << g_msg_recv << ", " << hz << " hz \n";
 
