@@ -1,5 +1,6 @@
 #pragma once
 #include "core/thread_utils.h"
+#include "marketlinks/common/types.h"
 #include <cstdint>
 #include <mutex>
 
@@ -11,11 +12,6 @@ using qx_t          = float; // Quantity for order books, both level-based and o
 using qx_side_t     = float; // Quantity with side information overloaded: if negative: ASK, if positive: BID
 // px_t: the price type will depend on wether it's level-based (int), or order-based (float) book.
 
-enum eSide
-{
-    BID = 0,
-    ASK = 1
-};
 
 // Determines book side given quantity.
 inline constexpr eSide qx_to_side(qx_side_t qq) {return qq < 0 ? eSide::ASK : eSide::BID;}

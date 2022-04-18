@@ -1,4 +1,5 @@
 #pragma once
+#include "core/config.h"
 #include <vector>
 #include <array>
 #include <set>
@@ -77,40 +78,6 @@ struct IStatsSource
         stats_read_thread_safe(std::vector<Any>& out) const {}
 };
 
-struct Config
-{
-    using key_t     = std::string const&;
-
-    template<class TVal>
-    TVal get(key_t a_key)
-    {
-        TVal res;
-        if(!try_get(a_key, res))
-            throw Error(a_key);
-        return res;
-    }
-
-    bool try_get(key_t, std::string&) const noexcept;
-    bool try_get(key_t, int64_t&) const noexcept;
-    bool try_get(key_t, double&) const noexcept;
-    bool try_get(key_t, bool&) const noexcept;
-    bool try_get(key_t, std::chrono::nanoseconds&) const noexcept;
-
-    template<class TVal>
-    bool try_get(key_t a_key, TVal& a_val,
-        typename std::enable_if< std::is_integral<TVal>::value >::type* = 0
-        ) noexcept
-    {
-        int64_t tmp;
-        if(!try_get(a_key, tmp))
-            return false;
-        a_val = tmp;
-        return true;
-    }
-
-    struct Error : std::runtime_error { Error(key_t); };
-
-};
 
 struct IReconfigurable
 {
