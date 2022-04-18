@@ -85,7 +85,13 @@
         "any": "cpp",
         "codecvt": "cpp",
         "options.h": "c",
-        "settings.h": "c"
+        "settings.h": "c",
+        "libwebsockets.h": "c",
+        "charconv": "cpp",
+        "compare": "cpp",
+        "concepts": "cpp",
+        "ranges": "cpp",
+        "stop_token": "cpp"
     },
     "C_Cpp.default.cppStandard": "c++11",
     "C_Cpp.default.cStandard": "c11",
@@ -100,4 +106,7 @@
         "editor.lineHighlightBackground": "#a7800228",
         //"editor.lineHighlightBorder": "#ffd45d28"
     },
+    "editor.formatOnSave": false,
+    "editor.insertSpaces": true,
+    "editor.tabSize": 4,
 }

@@ -26,156 +26,296 @@ BOOST_AUTO_TEST_SUITE(binance)
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
 
+struct EpollSet
+{
+    int m_epoll_fd{};
+    // poll impl, rather than epoll, just for test
+    lws_pollfd pollfds[64];
+    int count_pollfds;
+};
+struct pt_eventlibs_custom {
+	EpollSet *io_loop;
+};
+
+lws_pollfd* custom_poll_find_fd(EpollSet *cpcx, lws_sockfd_type fd)
+{
+	int n;
+
+	for (n = 0; n < cpcx->count_pollfds; n++)
+		if (cpcx->pollfds[n].fd == fd)
+			return &cpcx->pollfds[n];
+
+	return NULL;
+}
+
+int custom_poll_add_fd(EpollSet *cpcx, lws_sockfd_type fd, int events)
+{
+	struct lws_pollfd *pfd;
+
+	lwsl_info("%s: ADD fd %d, ev %d\n", __func__, fd, events);
+
+	pfd = custom_poll_find_fd(cpcx, fd);
+	if (pfd) {
+		lwsl_err("%s: ADD fd %d already in ext table\n", __func__, fd);
+		return 1;
+	}
+
+	if (cpcx->count_pollfds == LWS_ARRAY_SIZE(cpcx->pollfds)) {
+		lwsl_err("%s: no room left\n", __func__);
+		return 1;
+	}
+
+	pfd = &cpcx->pollfds[cpcx->count_pollfds++];
+	pfd->fd = fd;
+	pfd->events = (short)events;
+	pfd->revents = 0;
+
+	return 0;
+}
+
+int
+custom_poll_del_fd(EpollSet *cpcx, lws_sockfd_type fd)
+{
+	struct lws_pollfd *pfd;
+
+	lwsl_info("%s: DEL fd %d\n", __func__, fd);
+
+	pfd = custom_poll_find_fd(cpcx, fd);
+	if (!pfd) {
+		lwsl_err("%s: DEL fd %d missing in ext table\n", __func__, fd);
+		return 1;
+	}
+
+	if (cpcx->count_pollfds > 1)
+		*pfd = cpcx->pollfds[cpcx->count_pollfds - 1];
+
+	cpcx->count_pollfds--;
+
+	return 0;
+}
+
+static int
+custom_poll_change_fd(EpollSet *cpcx, lws_sockfd_type fd,
+		     int events_add, int events_remove)
+{
+	struct lws_pollfd *pfd;
+
+	lwsl_info("%s: CHG fd %d, ev_add %d, ev_rem %d\n", __func__, fd,
+			events_add, events_remove);
+
+	pfd = custom_poll_find_fd(cpcx, fd);
+	if (!pfd)
+		return 1;
+
+	pfd->events = (short)((pfd->events & (~events_remove)) | events_add);
+
+	return 0;
+}
+
+int init_pt_custom(struct lws_context *cx, void *_loop, int tsi)
+{
+	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
+					     lws_evlib_tsi_to_evlib_pt(cx, tsi);
+
+	/* store the loop we are bound to in our private part of the pt */
+
+	priv->io_loop = (EpollSet *)_loop;
+
+	return 0;
+}
+
+int sock_accept_custom(struct lws *wsi)
+{
+	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
+						lws_evlib_wsi_to_evlib_pt(wsi);
+
+	return custom_poll_add_fd(priv->io_loop, lws_get_socket_fd(wsi), POLLIN);
+}
+
+void io_custom(struct lws *wsi, unsigned int flags)
+{
+	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
+						lws_evlib_wsi_to_evlib_pt(wsi);
+	int e_add = 0, e_remove = 0;
+
+	if (flags & LWS_EV_START) {
+		if (flags & LWS_EV_WRITE)
+			e_add |= POLLOUT;
+
+		if (flags & LWS_EV_READ)
+			e_add |= POLLIN;
+	} else {
+		if (flags & LWS_EV_WRITE)
+			e_remove |= POLLOUT;
+
+		if (flags & LWS_EV_READ)
+			e_remove |= POLLIN;
+	}
+
+	custom_poll_change_fd(priv->io_loop, lws_get_socket_fd(wsi),
+			      e_add, e_remove);
+}
+
+static int
+wsi_logical_close_custom(struct lws *wsi)
+{
+	struct pt_eventlibs_custom *priv = (struct pt_eventlibs_custom *)
+						lws_evlib_wsi_to_evlib_pt(wsi);
+	return custom_poll_del_fd(priv->io_loop, lws_get_socket_fd(wsi));
+}
+
+
 BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 {
-    //wolfSSL_CTX_SetIORecv(0,0);
-    //auto recv_client = [](struct WOLFSSL* ssl, char* buff, int sz, void* ctx)
-    //wolfSSL_SetIORecv();
+    // wolfSSL_CTX_SetIORecv(0,0);
+    // auto recv_client = [](struct WOLFSSL* ssl, char* buff, int sz, void* ctx)
+    // wolfSSL_SetIORecv();
 
     // this is a thread contex, processing one event loop
-    lws_context_creation_info ws_info {};
+    lws_context_creation_info ws_info{};
 
     // request for custom epoll loop
-    struct EpollSet
-    {
-        int m_epoll_fd {};
-        //lws_pollfd	pollfds[64];
-        //int			count_pollfds;
-    };
-    static EpollSet g_epoll_set {};
-    void* foreign_loops[1] = {&g_epoll_set};
+    static EpollSet g_epoll_set{};
+    void *foreign_loops[1] = {&g_epoll_set};
     ws_info.foreign_loops = foreign_loops;
+    static lws_event_loop_ops event_loop_ops_custom = {};
+    event_loop_ops_custom.name                   = "custom",
+    event_loop_ops_custom.init_pt                = init_pt_custom,
+    event_loop_ops_custom.init_vhost_listen_wsi  = sock_accept_custom,
+    event_loop_ops_custom.sock_accept            = sock_accept_custom,
+    event_loop_ops_custom.io                     = io_custom,
+    event_loop_ops_custom.wsi_logical_close      = wsi_logical_close_custom,
+    event_loop_ops_custom.evlib_size_pt          = sizeof(pt_eventlibs_custom);
+    static const lws_plugin_evlib_t evlib_custom =
+    {
+        //.hdr =
+        {
+            "custom event loop",
+            "lws_evlib_plugin",
+            LWS_BUILD_HASH,
+            LWS_PLUGIN_API_MAGIC},
+        //.ops	=
+        &event_loop_ops_custom};
+    ws_info.event_lib_custom = &evlib_custom; // bind lws to our custom event
 
     // define our connection info
     struct ConnectionInfo
     {
         // more or less required by libwebsockets:
-        lws_sorted_usec_list_t	sul {}; // schedule connection retry
-        lws*                    wsi {};
-        uint16_t		        retry_count {};
+        lws_sorted_usec_list_t sul{}; // schedule connection retry
+        lws *wsi{};
+        uint16_t retry_count{};
     };
 
-    auto on_my_recv = [] ( struct lws*                 wsi
-                         , enum lws_callback_reasons   reason
-                         , void*                       a_conn_info
-                         , void*                       recv_data
-                         , size_t                      recv_len
-                         ) -> int
+    auto on_my_recv = [](struct lws *wsi, enum lws_callback_reasons reason, void *a_conn_info, void *recv_data, size_t recv_len) -> int
     {
-        auto const conn_info = (ConnectionInfo*) a_conn_info;
+        auto const conn_info = (ConnectionInfo *)a_conn_info;
         switch (reason)
         {
-            case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-                BOOST_FAIL("CLIENT_CONNECTION_ERROR: "
-                     << (const char*)recv_data );
-                goto do_retry;
-                break;
+        case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+            BOOST_FAIL("CLIENT_CONNECTION_ERROR: "
+                       << (const char *)recv_data);
+            goto do_retry;
+            break;
 
-            case LWS_CALLBACK_CLIENT_RECEIVE:
-                std::cerr << std::string((char*)recv_data, recv_len) << "\n";
-                break;
+        case LWS_CALLBACK_CLIENT_RECEIVE:
+            std::cerr << std::string((char *)recv_data, recv_len) << "\n";
+            break;
 
-            case LWS_CALLBACK_CLIENT_ESTABLISHED:
-                std::cerr << "established\n";
-                //lws_sul_schedule(lws_get_context(wsi), 0, &conn_info->sul_hz,sul_hz_cb, LWS_US_PER_SEC);
-                conn_info->wsi = wsi;
-                break;
+        case LWS_CALLBACK_CLIENT_ESTABLISHED:
+            std::cerr << "established\n";
+            // lws_sul_schedule(lws_get_context(wsi), 0, &conn_info->sul_hz,sul_hz_cb, LWS_US_PER_SEC);
+            conn_info->wsi = wsi;
+            break;
 
-            case LWS_CALLBACK_CLIENT_CLOSED:
-                //lws_sul_cancel(&conn_info->sul_hz);
-                goto do_retry;
+        case LWS_CALLBACK_CLIENT_CLOSED:
+            // lws_sul_cancel(&conn_info->sul_hz);
+            goto do_retry;
 
-            default:
-                break;
+        default:
+            break;
         }
         return lws_callback_http_dummy(wsi, reason, a_conn_info, recv_data, recv_len);
     do_retry:
         BOOST_FAIL("on_my_recv failed, will not try reconnect");
-        //if (lws_retry_sul_schedule_retry_wsi(
-        //        wsi,
-        //        &conn_info->sul,
-        //        connect_client,
-        //        &conn_info->retry_count))
+        // if (lws_retry_sul_schedule_retry_wsi(
+        //         wsi,
+        //         &conn_info->sul,
+        //         connect_client,
+        //         &conn_info->retry_count))
         //{
-        //    BOOST_FAIL("connection attempts exhausted");
-        //    //interrupted = 1;
-        //}
+        //     BOOST_FAIL("connection attempts exhausted");
+        //     //interrupted = 1;
+        // }
         return 0;
     };
 
     // give libwebsockets our callback for processing inbound data.
     // a callback is called a "protocol"
     const lws_protocols protocols[] = {
-        { "lws-minimal-client", on_my_recv, 0, 0, 0, NULL, 0 },
-        LWS_PROTOCOL_LIST_TERM
-    };
+        {"lws-minimal-client", on_my_recv, 0, 0, 0, NULL, 0},
+        LWS_PROTOCOL_LIST_TERM};
     ws_info.protocols = protocols;
-
 
     // extensions
     static const lws_extension extensions[] =
-    {
         {
-            "permessage-deflate",
-            lws_extension_callback_pm_deflate, // does malloc (!)
-            "permessage-deflate"
-            "; client_no_context_takeover"
-            "; client_max_window_bits"
-        },
-        { NULL, NULL, NULL}
-    };
+            {"permessage-deflate",
+             lws_extension_callback_pm_deflate, // does malloc (!)
+             "permessage-deflate"
+             "; client_no_context_takeover"
+             "; client_max_window_bits"},
+            {NULL, NULL, NULL}};
     ws_info.extensions = extensions;
-
 
     // rest of client init
     ws_info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     ws_info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
     ws_info.fd_limit_per_thread = 1 + 1 + 1;
 
-
     // Wolfssl specific, explicit root CA trust
-    static const char * const ca_pem_digicert_global_root =
-    "-----BEGIN CERTIFICATE-----\n"
-    "MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\n"
-    "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n"
-    "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\n"
-    "QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT\n"
-    "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\n"
-    "b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG\n"
-    "9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB\n"
-    "CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97\n"
-    "nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt\n"
-    "43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P\n"
-    "T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4\n"
-    "gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO\n"
-    "BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR\n"
-    "TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw\n"
-    "DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr\n"
-    "hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg\n"
-    "06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF\n"
-    "PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls\n"
-    "YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n"
-    "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n"
-    "-----END CERTIFICATE-----\n";
+    static const char *const ca_pem_digicert_global_root =
+        "-----BEGIN CERTIFICATE-----\n"
+        "MIIDrzCCApegAwIBAgIQCDvgVpBCRrGhdWrJWZHHSjANBgkqhkiG9w0BAQUFADBh\n"
+        "MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3\n"
+        "d3cuZGlnaWNlcnQuY29tMSAwHgYDVQQDExdEaWdpQ2VydCBHbG9iYWwgUm9vdCBD\n"
+        "QTAeFw0wNjExMTAwMDAwMDBaFw0zMTExMTAwMDAwMDBaMGExCzAJBgNVBAYTAlVT\n"
+        "MRUwEwYDVQQKEwxEaWdpQ2VydCBJbmMxGTAXBgNVBAsTEHd3dy5kaWdpY2VydC5j\n"
+        "b20xIDAeBgNVBAMTF0RpZ2lDZXJ0IEdsb2JhbCBSb290IENBMIIBIjANBgkqhkiG\n"
+        "9w0BAQEFAAOCAQ8AMIIBCgKCAQEA4jvhEXLeqKTTo1eqUKKPC3eQyaKl7hLOllsB\n"
+        "CSDMAZOnTjC3U/dDxGkAV53ijSLdhwZAAIEJzs4bg7/fzTtxRuLWZscFs3YnFo97\n"
+        "nh6Vfe63SKMI2tavegw5BmV/Sl0fvBf4q77uKNd0f3p4mVmFaG5cIzJLv07A6Fpt\n"
+        "43C/dxC//AH2hdmoRBBYMql1GNXRor5H4idq9Joz+EkIYIvUX7Q6hL+hqkpMfT7P\n"
+        "T19sdl6gSzeRntwi5m3OFBqOasv+zbMUZBfHWymeMr/y7vrTC0LUq7dBMtoM1O/4\n"
+        "gdW7jVg/tRvoSSiicNoxBN33shbyTApOB6jtSj1etX+jkMOvJwIDAQABo2MwYTAO\n"
+        "BgNVHQ8BAf8EBAMCAYYwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUA95QNVbR\n"
+        "TLtm8KPiGxvDl7I90VUwHwYDVR0jBBgwFoAUA95QNVbRTLtm8KPiGxvDl7I90VUw\n"
+        "DQYJKoZIhvcNAQEFBQADggEBAMucN6pIExIK+t1EnE9SsPTfrgT1eXkIoyQY/Esr\n"
+        "hMAtudXH/vTBH1jLuG2cenTnmCmrEbXjcKChzUyImZOMkXDiqw8cvpOp/2PV5Adg\n"
+        "06O/nVsJ8dWO41P0jmP6P6fbtGbfYmbW0W5BjfIttep3Sp+dWOIrWcBAI+0tKIJF\n"
+        "PnlUkiaY4IBIqDfv8NZ5YBberOgOzW6sRBc4L0na4UU+Krk2U886UAb3LujEV0ls\n"
+        "YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n"
+        "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n"
+        "-----END CERTIFICATE-----\n";
     ws_info.client_ssl_ca_mem = ca_pem_digicert_global_root;
     ws_info.client_ssl_ca_mem_len = (unsigned int)strlen(ca_pem_digicert_global_root);
 
     // connect
-    static lws_context* context = lws_create_context(&ws_info);
+    static lws_context *context = lws_create_context(&ws_info);
     BOOST_REQUIRE_MESSAGE(context, "lws_create_context failed");
 
-    auto on_connect_client = [](lws_sorted_usec_list_t* sul)
+    auto on_connect_client = [](lws_sorted_usec_list_t *sul)
     {
-        ConnectionInfo* mco = lws_container_of(sul, ConnectionInfo, sul);
-        lws_client_connect_info i {};
+        ConnectionInfo *mco = lws_container_of(sul, ConnectionInfo, sul);
+        lws_client_connect_info i{};
 
         i.context = context;
         i.port = 443;
         i.address = "fstream.binance.com";
         i.path = "/stream?"
-            "streams="
-            //"btcusdt@depth@0ms/"
-            "btcusdt@bookTicker/"
+                 "streams="
+                 //"btcusdt@depth@0ms/"
+                 "btcusdt@bookTicker/"
             //"btcusdt@aggTrade"
             ;
         i.host = i.address;
@@ -185,7 +325,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         i.local_protocol_name = "lws-minimal-client";
         i.pwsi = &mco->wsi;
 
-        static const uint32_t backoff_ms[] = { 1000, 2000, 3000, 4000, 5000 };
+        static const uint32_t backoff_ms[] = {1000, 2000, 3000, 4000, 5000};
         static const lws_retry_bo_t retry = {
             /*.retry_ms_table			= */ backoff_ms,
             /*.retry_ms_table_count	    = */ LWS_ARRAY_SIZE(backoff_ms),
@@ -201,16 +341,16 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         {
             BOOST_FAIL("Connection failed (no retry)");
             /*
-            * Failed... schedule a retry... we can't use the _retry_wsi()
-            * convenience wrapper api here because no valid wsi at this
-            * point.
-            */
-            //if (lws_retry_sul_schedule(context, 0, sul, &retry,
-            //            on_connect_client, &mco->retry_count))
+             * Failed... schedule a retry... we can't use the _retry_wsi()
+             * convenience wrapper api here because no valid wsi at this
+             * point.
+             */
+            // if (lws_retry_sul_schedule(context, 0, sul, &retry,
+            //             on_connect_client, &mco->retry_count))
             //{
-            //    lwsl_err("%s: connection attempts exhausted\n", __func__);
-            //    interrupted = 1;
-            //}
+            //     lwsl_err("%s: connection attempts exhausted\n", __func__);
+            //     interrupted = 1;
+            // }
         }
     };
 
@@ -219,9 +359,64 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     // schedule the first client connection attempt to happen immediately
     lws_sul_schedule(context, 0, &g_conn_info.sul, on_connect_client, 1);
 
-    int nn = 0;
-    while (nn >= 0) // && !interrupted)
-        nn = lws_service(context, 0);
+    enum class eMode
+    {
+        SPIN,
+        EPOLL
+    };
+
+    eMode const mode = eMode::EPOLL;
+
+    if (mode == eMode::SPIN)
+    {
+        int nn = 0;
+        while (nn >= 0) // && !interrupted)
+            nn = lws_service(context, 0);
+    }
+    else
+    {
+        for (;;)
+        {
+            int n = lws_service_adjust_timeout(context, 5000, 0);
+
+            lwsl_warn("%s: entering poll wait %dms\n", __func__, n);
+
+            EpollSet *const cpcx = &g_epoll_set;
+
+            n = poll(cpcx->pollfds, (nfds_t)cpcx->count_pollfds, n);
+
+            lwsl_warn("%s: exiting poll ret %d\n", __func__, n);
+
+            if (n <= 0)
+                continue;
+
+            for (n = 0; n < cpcx->count_pollfds; n++)
+            {
+                lws_sockfd_type fd = cpcx->pollfds[n].fd;
+                int m;
+
+                if (!cpcx->pollfds[n].revents)
+                    continue;
+
+                m = lws_service_fd(context, &cpcx->pollfds[n]);
+
+                /* if something closed, retry this slot since may have been
+                 * swapped with end fd */
+                if (m && cpcx->pollfds[n].fd != fd)
+                    n--;
+
+                if (m < 0)
+                    /* lws feels something bad happened, but
+                     * the outer application may not care */
+                    continue;
+                if (!m)
+                {
+                    /* check if it is an fd owned by the
+                     * application */
+                }
+            }
+        }
+    }
 
     lws_context_destroy(context);
 }
@@ -246,18 +441,19 @@ BOOST_AUTO_TEST_CASE(simple_print)
 
         ws_client.blk_send_str(rpc_req);
 
-        for(;;)
+        for (;;)
         {
             auto const buf = ws_client.consume_begin();
             std::string data(buf.data, buf.len);
-            std::cout << "\n" << data << "\n";
+            std::cout << "\n"
+                      << data << "\n";
             const size_t consumed = buf.len;
             ws_client.consume_commit(consumed);
         }
     }
-    catch(const std::exception& ex)
+    catch (const std::exception &ex)
     {
-        std::cerr << "Exception: " <<  ex.what() << '\n';
+        std::cerr << "Exception: " << ex.what() << '\n';
     }
 }
 
