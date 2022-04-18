@@ -28,7 +28,7 @@ BOOST_AUTO_TEST_SUITE(binance)
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
 
-bool   g_print_md = false;
+bool   g_print_md = true;
 bool   g_print_numcalls = false;
 size_t g_msg_recv = 0;
 
