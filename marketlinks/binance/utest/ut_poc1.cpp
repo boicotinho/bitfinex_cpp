@@ -30,8 +30,6 @@ BOOST_AUTO_TEST_SUITE(binance)
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
 
-bool   g_print_md = false;
-
 enum class eMode
 {
     SPIN,
@@ -39,10 +37,14 @@ enum class eMode
     EPOLL,
 };
 
-eMode const g_ep_mode = eMode::SPIN;
-size_t      g_msg_recv = 0;
+bool        g_print_md      = false;
+size_t      g_num_conns     = 10;
+int         g_epoll_wait_ms = 0;
+size_t      g_test_time_s   = 15;
+eMode const g_ep_mode       = eMode::EPOLL;
 
-bool g_quit = false;
+size_t      g_msg_recv      = 0;
+bool        g_quit          = false;
 void sigint_handler(int sig)
 {
 	g_quit = true;
@@ -339,7 +341,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     // rest of client init
     ws_info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
     ws_info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
-    ws_info.fd_limit_per_thread = 1 + 1 + 1;
+    ws_info.fd_limit_per_thread = 1 + 1 + 1 + g_num_conns;
 
     // Wolfssl specific, explicit root CA trust
     static const char *const ca_pem_digicert_global_root =
@@ -424,17 +426,18 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 
 	signal(SIGINT, sigint_handler);
 
-    ConnectionInfo g_conn_info;
+    std::vector<ConnectionInfo> conns(g_num_conns);
 
     // schedule the first client connection attempt to happen immediately
-    lws_sul_schedule(context, 0, &g_conn_info.sul, on_connect_client, 1);
+    for(auto& conn: conns)
+        lws_sul_schedule(context, 0, &conn.sul, on_connect_client, 1);
 
     using Clock = std::chrono::high_resolution_clock;
 
     std::vector<CpuTimeStamp> ts;
     ts.reserve(100000000);
     size_t loop_calls = 0;
-    auto test_time = std::chrono::seconds(7);
+    auto test_time = std::chrono::seconds(g_test_time_s);
     auto t_bgn = Clock::now();
     auto deadline = t_bgn + test_time;
 
@@ -458,7 +461,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     {
         while(!g_quit && Clock::now() < deadline)
         {
-            int n = lws_service_adjust_timeout(context, 5000, 0);
+            int n = lws_service_adjust_timeout(context, g_epoll_wait_ms, 0);
 
             //lwsl_warn("%s: entering poll wait %dms\n", __func__, n);
 
