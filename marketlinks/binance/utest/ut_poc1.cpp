@@ -240,12 +240,12 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     // wolfSSL_SetIORecv();
 
     // this is a thread contex, processing one event loop
-    lws_context_creation_info ws_info{};
+    lws_context_creation_info ws_thread_context_config{};
 
     // request for custom epoll loop
     static EpollSet g_epoll_set{};
     void *foreign_loops[1] = {&g_epoll_set};
-    ws_info.foreign_loops = foreign_loops;
+    ws_thread_context_config.foreign_loops = foreign_loops;
     static lws_event_loop_ops event_loop_ops_custom = {};
     event_loop_ops_custom.name                   = "custom",
     event_loop_ops_custom.init_pt                = init_pt_custom,
@@ -265,7 +265,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         },
         //.ops	=
         &event_loop_ops_custom};
-    ws_info.event_lib_custom = &evlib_custom; // bind lws to our custom event
+    ws_thread_context_config.event_lib_custom = &evlib_custom; // bind lws to our custom event
     g_epoll_set.m_epoll_fd = epoll_create1(0);
 
     // define our connection info
@@ -328,7 +328,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     const lws_protocols protocols[] = {
         {"lws-minimal-client", on_my_recv, 0, 0, 0, NULL, 0},
         LWS_PROTOCOL_LIST_TERM};
-    ws_info.protocols = protocols;
+    ws_thread_context_config.protocols = protocols;
 
     // extensions
     static const lws_extension extensions[] =
@@ -339,12 +339,12 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
              "; client_no_context_takeover"
              "; client_max_window_bits"},
             {NULL, NULL, NULL}};
-    ws_info.extensions = extensions;
+    ws_thread_context_config.extensions = extensions;
 
     // rest of client init
-    ws_info.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-    ws_info.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
-    ws_info.fd_limit_per_thread = 1 + 1 + 1 + g_num_conns;
+    ws_thread_context_config.options = LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+    ws_thread_context_config.port = CONTEXT_PORT_NO_LISTEN; /* we do not run any server */
+    ws_thread_context_config.fd_limit_per_thread = 1 + 1 + 1 + g_num_conns;
 
     // Wolfssl specific, explicit root CA trust
     static const char *const ca_pem_digicert_global_root =
@@ -370,11 +370,11 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         "YSEY1QSteDwsOoBrp+uvFRTp2InBuThs4pFsiv9kuXclVzDAGySj4dzp30d8tbQk\n"
         "CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=\n"
         "-----END CERTIFICATE-----\n";
-    ws_info.client_ssl_ca_mem = ca_pem_digicert_global_root;
-    ws_info.client_ssl_ca_mem_len = (unsigned int)strlen(ca_pem_digicert_global_root);
+    ws_thread_context_config.client_ssl_ca_mem = ca_pem_digicert_global_root;
+    ws_thread_context_config.client_ssl_ca_mem_len = (unsigned int)strlen(ca_pem_digicert_global_root);
 
     // connect
-    static lws_context *context = lws_create_context(&ws_info);
+    static lws_context *context = lws_create_context(&ws_thread_context_config);
     BOOST_REQUIRE_MESSAGE(context, "lws_create_context failed");
 
     auto on_connect_client = [](lws_sorted_usec_list_t *sul)
