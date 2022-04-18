@@ -2,6 +2,7 @@
 #include "web_socket/web_socket_client.h"
 #include "core/profile_utils.h"
 #include "core/string_utils.h"
+#include "core/profile_utils.h"
 #include <libwebsockets.h>
 //#include <wolfssl/ssl.h>
 #include <sys/epoll.h>
@@ -26,6 +27,10 @@ BOOST_AUTO_TEST_SUITE(binance)
 //
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
+
+bool   g_print_md = false;
+bool   g_print_numcalls = false;
+size_t g_msg_recv = 0;
 
 enum class eMode
 {
@@ -272,7 +277,9 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
             break;
 
         case LWS_CALLBACK_CLIENT_RECEIVE:
-            std::cerr << std::string((char *)recv_data, recv_len) << "\n";
+            if(g_print_md)
+                std::cerr << std::string((char *)recv_data, recv_len) << "\n";
+            ++g_msg_recv;
             break;
 
         case LWS_CALLBACK_CLIENT_ESTABLISHED:
@@ -420,11 +427,12 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     }
     else
     {
+        size_t epoll_calls = 0;
         for (;;)
         {
             int n = lws_service_adjust_timeout(context, 5000, 0);
 
-            lwsl_warn("%s: entering poll wait %dms\n", __func__, n);
+            //lwsl_warn("%s: entering poll wait %dms\n", __func__, n);
 
             EpollSet *const cpcx = &g_epoll_set;
 
@@ -433,7 +441,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
             else
                 n = epoll_wait(cpcx->m_epoll_fd, cpcx->ep_events, 64, n);
 
-            lwsl_warn("%s: exiting poll ret %d\n", __func__, n);
+            //lwsl_warn("%s: exiting poll ret %d\n", __func__, n);
 
             if (n <= 0)
                 continue;
@@ -463,10 +471,16 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
                     if (!evt2.revents)
                         continue;
 
-                    lwsl_warn("@@@ exec: fd = %d, evt=%x", fd, evt2.events);
+                    //lwsl_warn("@@@ exec: fd = %d, evt=%x", fd, evt2.events);
 
                     int m = lws_service_fd(context, &evt2);
 
+                    ++ epoll_calls;
+
+                    if(g_print_numcalls)
+                        std::cerr << "ep: " << epoll_calls << ", cb: " << g_msg_recv << '\n';
+
+                    // FIXME: this will not work for epoll
                     /* if something closed, retry this slot since may have been
                     * swapped with end fd */
                     if (m && evt2.fd != fd)
