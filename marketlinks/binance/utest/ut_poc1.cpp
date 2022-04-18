@@ -3,9 +3,11 @@
 #include "core/profile_utils.h"
 #include "core/string_utils.h"
 #include "core/profile_utils.h"
+#include <chrono>
 #include <libwebsockets.h>
 //#include <wolfssl/ssl.h>
 #include <sys/epoll.h>
+#include <signal.h>
 
 // self.binance_futures_ws_address = "wss://fstream.binance.com"
 // self.binance_spot_ws_address = "wss://stream.binance.com:9443"
@@ -28,9 +30,7 @@ BOOST_AUTO_TEST_SUITE(binance)
 // before calling `wolfSSL_new();`. Though it's not recommended.
 // https://libwebsockets.org/git/libwebsockets/tree/minimal-examples/client/binance
 
-bool   g_print_md = true;
-bool   g_print_numcalls = false;
-size_t g_msg_recv = 0;
+bool   g_print_md = false;
 
 enum class eMode
 {
@@ -39,7 +39,14 @@ enum class eMode
     EPOLL,
 };
 
-eMode const g_ep_mode = eMode::EPOLL;
+eMode const g_ep_mode = eMode::SPIN;
+size_t      g_msg_recv = 0;
+
+bool g_quit = false;
+void sigint_handler(int sig)
+{
+	g_quit = true;
+}
 
 struct EpollSet
 {
@@ -297,7 +304,8 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         }
         return lws_callback_http_dummy(wsi, reason, a_conn_info, recv_data, recv_len);
     do_retry:
-        BOOST_FAIL("on_my_recv failed, will not try reconnect");
+        //BOOST_FAIL("on_my_recv failed, will not try reconnect");
+        g_quit = true;
         // if (lws_retry_sul_schedule_retry_wsi(
         //         wsi,
         //         &conn_info->sul,
@@ -374,8 +382,8 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         i.address = "fstream.binance.com";
         i.path = "/stream?"
                  "streams="
-                 //"btcusdt@depth@0ms/"
-                 "btcusdt@bookTicker/"
+                 "btcusdt@depth@0ms/"
+                 //"btcusdt@bookTicker/"
             //"btcusdt@aggTrade"
             ;
         i.host = i.address;
@@ -414,21 +422,41 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
         }
     };
 
+	signal(SIGINT, sigint_handler);
+
     ConnectionInfo g_conn_info;
 
     // schedule the first client connection attempt to happen immediately
     lws_sul_schedule(context, 0, &g_conn_info.sul, on_connect_client, 1);
 
+    using Clock = std::chrono::high_resolution_clock;
+
+    std::vector<CpuTimeStamp> ts;
+    ts.reserve(100000000);
+    size_t loop_calls = 0;
+    auto test_time = std::chrono::seconds(7);
+    auto t_bgn = Clock::now();
+    auto deadline = t_bgn + test_time;
+
     if (g_ep_mode == eMode::SPIN)
     {
         int nn = 0;
-        while (nn >= 0) // && !interrupted)
-            nn = lws_service(context, 0);
+        while (nn >= 0 && !g_quit && Clock::now() < deadline)
+        {
+            auto const t0 = rdtscp();
+            nn = lws_service(context, -1); // 0: sleep until some event. -1: timeout=0
+            auto const t1 = rdtscp();
+            ts.push_back(t1-t0);
+            if(g_msg_recv == 1){
+                t_bgn = Clock::now();
+                deadline = t_bgn + test_time;
+            }
+            ++ loop_calls;
+        }
     }
     else
     {
-        size_t epoll_calls = 0;
-        for (;;)
+        while(!g_quit && Clock::now() < deadline)
         {
             int n = lws_service_adjust_timeout(context, 5000, 0);
 
@@ -436,6 +464,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 
             EpollSet *const cpcx = &g_epoll_set;
 
+            auto const t0 = rdtscp();
             if (g_ep_mode == eMode::POLL)
                 n = poll(cpcx->pollfds, (nfds_t)cpcx->count_pollfds, n);
             else
@@ -475,10 +504,15 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 
                     int m = lws_service_fd(context, &evt2);
 
-                    ++ epoll_calls;
+                    auto const t1 = rdtscp();
+                    ts.push_back(t1-t0);
 
-                    if(g_print_numcalls)
-                        std::cerr << "ep: " << epoll_calls << ", cb: " << g_msg_recv << '\n';
+                    ++ loop_calls;
+
+                    if(g_msg_recv == 1){
+                        t_bgn = Clock::now();
+                        deadline = t_bgn + test_time;
+                    }
 
                     // FIXME: this will not work for epoll
                     /* if something closed, retry this slot since may have been
@@ -498,9 +532,15 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
                 }
             }
         }
+        std::cerr << "\nep: " << loop_calls << ", cb: " << g_msg_recv << '\n';
 
         close(g_epoll_set.m_epoll_fd);
     }
+
+    auto t_end = Clock::now();
+    std::cerr << FormatCcTimingsTable(ts, "lws_service(,-1)");
+    double hz = double(g_msg_recv) / double((t_end - t_bgn).count() / 1e9);
+    std::cerr << "\nep: " << loop_calls << ", cb: " << g_msg_recv << ", " << hz << " hz \n";
 
     lws_context_destroy(context);
 }
@@ -508,6 +548,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
 // wss://stream.binance.com:9443/ws/bnbbtc@depth
 BOOST_AUTO_TEST_CASE(simple_print)
 {
+    return;
     WebSocketURL parsed_url("ws://stream.binance.com:9443/ws");
     WebSocketClient ws_client = WebSocketClient(parsed_url);
     try
