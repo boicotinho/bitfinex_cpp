@@ -1,5 +1,5 @@
 #pragma once
-#include "buf_desc.h"
+#include "core/str_view.h"
 #include <string>
 #include <vector>
 #include <stdint.h>

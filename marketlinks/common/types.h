@@ -1,5 +1,6 @@
 #pragma once
 //#include "core/vector_view.h"
+//#include "core/str_view.h"
 #include <string>
 #include <stdexcept>
 #include <stdint.h>
@@ -38,5 +39,11 @@ using MarkerCallback = void (*)
 // throwing exceptions when that happens is OK and simplifies the logic;
 struct TruncatedData : std::runtime_error
 {
-    TruncatedData() : std::runtime_error("Parser::TruncatedData") {}
+    TruncatedData() : std::runtime_error("TruncatedData") {}
+};
+
+struct ProtocolError : std::runtime_error
+{
+    explicit ProtocolError(std::string const& context = {})
+        : std::runtime_error("ProtocolError: " + context) {}
 };

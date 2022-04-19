@@ -8,6 +8,7 @@
 //#include <wolfssl/ssl.h>
 #include <sys/epoll.h>
 #include <signal.h>
+#include <boost/utility/string_view.hpp>
 
 // self.binance_futures_ws_address = "wss://fstream.binance.com"
 // self.binance_spot_ws_address = "wss://stream.binance.com:9443"
