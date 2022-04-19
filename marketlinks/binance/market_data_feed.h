@@ -3,6 +3,8 @@
 #include "marketlinks/common/json_obk.h"
 #include "marketlinks/common/rest_request.h"
 #include "core/str_view.h"
+#include "core/gcc_utils.h"
+#include "core/cmpxchg16b.h"
 #include <memory>
 #include <stdint.h>
 
@@ -34,7 +36,7 @@ public:
 namespace binance // spots only, not futures
 {
 
-using UpdateId = uint64_t;
+using UpdateId = uint64_t; // u":18,541,854,003. 86.4m milliseconds in 24h
 
 class Parser // Spot only
 {
@@ -42,7 +44,7 @@ public:
     enum class eRvType {
         UNKNOWN, RESPONSE,
         TICKER,   DEPTH,   TRADE,   // normal data
-        TICKER_C, DEPTH_C, TRADE_C,  // after SET_PROPERTY "combined"=true
+        TICKER_C, DEPTH_C, TRADE_C, // after SET_PROPERTY "combined"=true
     };
 
     eRvType determine_rcv_type(StrView);
@@ -65,6 +67,38 @@ private:
                           , StrView     a_symbol
                           ) {}
 };
+
+// update-id: 8b + 4b + 4b + 4b + 4b
+class BookTicker
+{
+    struct Side
+    {
+        Price    px;
+        Quantity qx;
+    };
+    Side     m_sides[2];
+};
+
+struct ArbPtr
+{
+    using PtrT    = BookTicker*;
+    using TimeT   = UpdateId;
+    using Compare = std::greater<TimeT>;
+
+    bool atomic_update_if_newer(TimeT const a_uid, PtrT const a_ptr)
+    {
+        static_assert(sizeof(ArbRef) == 16,
+            "Please check ArbRef for atomic 128 CAS")
+        auto vv = m_ver;
+        if(!Compare()(a_uid, vv))
+            return false;
+        auto pp = m_ptr;
+        return cmpxchg16b(this, vv, pp, a_uid, a_ptr);
+    }
+private:
+    TimeT volatile m_ver {}; // 18,541,854,003 : 35 bits, max 34.3B
+    PtrT           m_ptr {};
+} PACK128();
 
 
 

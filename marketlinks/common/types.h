@@ -2,6 +2,7 @@
 //#include "core/vector_view.h"
 //#include "core/str_view.h"
 #include <string>
+#include <vector>
 #include <stdexcept>
 #include <stdint.h>
 #include <stddef.h>
