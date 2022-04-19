@@ -1,0 +1,102 @@
+https://en.wikichip.org/wiki/intel/xeon_platinum/8124m
+
+
+ubuntu@FUND-BASIS-COINBASE-2:~$ cat /proc/meminfo
+MemTotal:        5060532 kB
+MemFree:         3104932 kB
+MemAvailable:    3338056 kB
+Buffers:            3300 kB
+Cached:           403136 kB
+SwapCached:            0 kB
+Active:            59368 kB
+Inactive:        1719876 kB
+Active(anon):        164 kB
+Inactive(anon):  1375156 kB
+Active(file):      59204 kB
+Inactive(file):   344720 kB
+Unevictable:       23040 kB
+Mlocked:           18504 kB
+SwapTotal:             0 kB
+SwapFree:              0 kB
+Dirty:              5120 kB
+Writeback:             0 kB
+AnonPages:       1395976 kB
+Mapped:           365872 kB
+Shmem:               840 kB
+KReclaimable:      75892 kB
+Slab:             108520 kB
+SReclaimable:      75892 kB
+SUnreclaim:        32628 kB
+KernelStack:        3072 kB
+PageTables:         7364 kB
+NFS_Unstable:          0 kB
+Bounce:                0 kB
+WritebackTmp:          0 kB
+CommitLimit:     2530264 kB
+Committed_AS:    2538124 kB
+VmallocTotal:   34359738367 kB
+VmallocUsed:       11356 kB
+VmallocChunk:          0 kB
+Percpu:             1400 kB
+HardwareCorrupted:     0 kB
+AnonHugePages:         0 kB
+ShmemHugePages:        0 kB
+ShmemPmdMapped:        0 kB
+FileHugePages:         0 kB
+FilePmdMapped:         0 kB
+HugePages_Total:       0
+HugePages_Free:        0
+HugePages_Rsvd:        0
+HugePages_Surp:        0
+Hugepagesize:       2048 kB
+Hugetlb:               0 kB
+DirectMap4k:      120744 kB
+DirectMap2M:     5138432 kB
+DirectMap1G:     1048576 kB
+
+
+ubuntu@FUND-BASIS-COINBASE-2:~$ lscpu
+Architecture:                    x86_64
+CPU op-mode(s):                  32-bit, 64-bit
+Byte Order:                      Little Endian
+Address sizes:                   46 bits physical, 48 bits virtual
+CPU(s):                          2
+On-line CPU(s) list:             0,1
+Thread(s) per core:              2
+Core(s) per socket:              1
+Socket(s):                       1
+NUMA node(s):                    1
+Vendor ID:                       GenuineIntel
+CPU family:                      6
+Model:                           85
+Model name:                      Intel(R) Xeon(R) Platinum 8124M CPU @ 3.00GHz
+Stepping:                        4
+CPU MHz:                         3404.865
+BogoMIPS:                        5999.99
+Hypervisor vendor:               KVM
+Virtualization type:             full
+L1d cache:                       32 KiB
+L1i cache:                       32 KiB
+L2 cache:                        1 MiB
+L3 cache:                        24.8 MiB
+NUMA node0 CPU(s):               0,1
+Vulnerability Itlb multihit:     KVM: Mitigation: VMX unsupported
+Vulnerability L1tf:              Mitigation; PTE Inversion
+Vulnerability Mds:               Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state
+                                 unknown
+Vulnerability Meltdown:          Mitigation; PTI
+Vulnerability Spec store bypass: Vulnerable
+Vulnerability Spectre v1:        Mitigation; usercopy/swapgs barriers and __user pointer sanitization
+Vulnerability Spectre v2:        Mitigation; Retpolines, STIBP disabled, RSB filling
+Vulnerability Srbds:             Not affected
+Vulnerability Tsx async abort:   Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state
+                                 unknown
+Flags:                           fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse3
+                                 6 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constan
+                                 t_tsc rep_good nopl xtopology nonstop_tsc cpuid aperfmperf tsc_known_f
+                                 req pni pclmulqdq ssse3 fma cx16 pcid sse4_1 sse4_2 x2apic movbe popcn
+                                 t tsc_deadline_timer aes xsave avx f16c rdrand hypervisor lahf_lm abm
+                                 3dnowprefetch invpcid_single pti fsgsbase tsc_adjust bmi1 hle avx2 sme
+                                 p bmi2 erms invpcid rtm mpx avx512f avx512dq rdseed adx smap clflushop
+                                 t clwb avx512cd avx512bw avx512vl xsaveopt xsavec xgetbv1 xsaves ida a
+                                 rat pku ospke

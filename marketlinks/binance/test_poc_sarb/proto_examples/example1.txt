@@ -79,3 +79,28 @@ wscat -c wss://stream.binance.com/ws
 < {"stream":"btcusdt@aggTrade","data":{"e":"aggTrade","E":1650353595520,"s":"BTCUSDT","a":1144380019,"p":"40725.50000000","q":"0.00049000","f":1329295642,"l":1329295642,"T":1650353595519,"m":true,"M":true}}
 <                                     {"e":"aggTrade","E":1650348134133,"s":"BTCUSDT","a":1144349358,"p":"40698.61000000","q":"0.00087000","f":1329258625,"l":1329258625,"T":1650348134132,"m":true,"M":true}
 
+
+================================================================================
+ETHBTC
+LTCBTC
+BNBBTC
+NEOBTC
+SNTETH
+BTCUSDT
+ETHUSDT
+
+ethbtc
+ltcbtc
+bnbbtc
+neobtc
+snteth
+btcusdt
+ethusdt
+
+{"method": "SUBSCRIBE", "params": ["ethbtc@bookTicker", "ltcbtc@bookTicker", "bnbbtc@bookTicker", "neobtc@bookTicker", "snteth@bookTicker", "btcusdt@bookTicker", "ethusdt@bookTicker"], "id": 333}
+
+{"u":18598540639,"s":"BTCUSDT","b":"40813.12000000","B":"1.95210000","a":"40813.13000000","A":"10.81795000"}
+{"u":5149109012,"s":"ETHBTC","b":"0.07465100","B":"19.02930000","a":"0.07465200","A":"32.80080000"}
+{"u":1644669588,"s":"LTCBTC","b":"0.00272000","B":"87.78000000","a":"0.00272100","A":"67.79300000"}
+{"u":18598540677,"s":"BTCUSDT","b":"40813.12000000","B":"1.95090000","a":"40813.13000000","A":"10.81795000"}
+================================================================================
