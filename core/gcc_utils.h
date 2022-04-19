@@ -2,6 +2,7 @@
 
 #define IS_POW2(EXP)                (((EXP)&((EXP)-1))==0)
 #define PACK64()                    __attribute__((aligned(64)))
+#define PACK128()                   __attribute__((aligned(128)))
 #define COMPILER_BARRIER()          __asm__ __volatile("")
 
 // Branch optimization macros
