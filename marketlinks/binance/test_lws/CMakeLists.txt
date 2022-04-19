@@ -2,12 +2,9 @@ project("test_lws")
 
 find_package(Threads REQUIRED)
 
-file (GLOB SOURCE_FILES *.cpp)
-file (GLOB HEADER_FILES *.h)
-
 add_executable( ${PROJECT_NAME}
-    ${SOURCE_FILES}
+    test_lws_main.cpp
 )
 
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
-    core web_socket websockets Threads::Threads)
+    core web_socket wolfssl websockets Threads::Threads)
