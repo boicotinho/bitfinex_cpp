@@ -6,31 +6,13 @@
 #include "core/str_view.h"
 #include <memory>
 #include <stdint.h>
+#include <x86intrin.h>
 
 /*
 py ->
 b1 = cpp.Book(market='BINANCE',  symbol='BTC_USDT' ) -> engine
 b2 = cpp.Book(market='BITFINEX', symbol='tBTCUSD' )
-
-class MarketDataFeed : Parser
-{
-    WebSocket m_ws;
-public:
-    void rpc_request(RestRequest);
-
-    subscribe(symbol);
-}
-
 */
-
-
-//class Parser // isolated just for unit test
-//{
-//public:
-//    using Error = TruncatedData;
-//    size_t parse_data_and_dispatch_message(char const* data, size_t len);
-//private:
-//};
 
 namespace binance // spots only, not futures
 {
@@ -46,12 +28,22 @@ public:
         TICKER_C, DEPTH_C, TRADE_C, // after SET_PROPERTY "combined"=true
     };
 
-    eRvType determine_rcv_type(StrView);
-    StrView determine_symbol(StrView); // ~710 possible
+    struct PreParse
+    {
+        eRvType type;
+        StrView symbol; // ~710 possible
+    };
 
-    size_t  parse_ticker(StrView);
-    size_t  parse_depth(StrView);
-    size_t  parse_trade(StrView);
+    PreParse determine_type_and_symbol(StrView); // give chance to select a book
+    uint_fast32_t parse_and_dispatch_to_derived_class(StrView, PreParse);
+
+    template<class OnTickerFunc> // OnTickerFunc(UpdateId, bid_px,qx, ask_px,qx)
+    uint_fast32_t parse_ticker(StrView, OnTickerFunc);
+
+    uint_fast32_t parse_depth(StrView);
+    uint_fast32_t parse_trade(StrView);
+
+private:
 
     // using TruncatedData;
     // using ProtocolError
@@ -67,15 +59,102 @@ private:
                           ) {}
 };
 
-// update-id: 8b + 4b + 4b + 4b + 4b
 class BookTicker
 {
+public:
+    void update(eSide, Price, Quantity);
+private:
     struct Side
     {
         Price    px;
         Quantity qx;
     };
-    Side     m_sides[2];
+private:
+    Side m_sides[2];
+};
+
+class MarkerTable
+{
+public:
+    enum { CAPACITY = 256 };
+    union CrossCount
+    {
+        explicit operator bool() const {return !!reg;}
+        uint32_t side[2];
+        uint64_t reg;
+    };
+    CrossCount
+    get_num_makers_crossed(Price const a_bid_px, Price const a_ask_px) const
+    {
+        bool const bid_ok = a_bid_px >= m_cached_top_markers[eSide::BID];
+        bool const ask_ok = a_ask_px <= m_cached_top_markers[eSide::ASK];
+        if(bid_ok & ask_ok)
+            return {};
+        enum { NUM_SCALARS = sizeof(v_bid)/sizeof(Price) };
+        CrossCount res {};
+        {
+            auto const v_px = _mm256_set1_ps(a_bid_px);
+            Price const* const p_bgn =
+                (Price const*) m_sides[eSide::BID].sorted_trigger_prices;
+            Price const* const p_end = p_src + m_sizes[eSide::BID];
+            auto pp = p_bgn;
+            do
+            {
+                auto const byte_mask = _mm256_cmplt_ps(*pp, v_px);
+                auto const bit_mask = _mm256_movemask_ps(byte_mask);
+                if(bit_mask)
+                {
+                    auto const first_set_bit = __builtin_ffs(bit_mask) - 1;
+                    res.side[eSide::BID] = (pp - p_bgn) + first_set_bit;
+                    break;
+                }
+                pp += NUM_SCALARS;
+            } while(pp < p_end);
+        }
+        {
+            auto const v_px = _mm256_set1_ps(a_ask_px);
+            Price const* const p_bgn =
+                (Price const*) m_sides[eSide::ASK].sorted_trigger_prices;
+            Price const* const p_end = p_src + m_sizes[eSide::ASK];
+            auto pp = p_bgn;
+            do
+            {
+                auto const byte_mask = _mm256_cmpgt_ps(*pp, v_px);
+                auto const bit_mask = _mm256_movemask_ps(byte_mask);
+                if(bit_mask)
+                {
+                    auto const first_set_bit = __builtin_ffs(bit_mask) - 1;
+                    res.side[eSide::ASK] = (pp - p_bgn) + first_set_bit;
+                    break;
+                }
+                pp += NUM_SCALARS;
+            } while(pp < p_end);
+        }
+        return res;
+    }
+    //CrossCount
+    //get_num_makers_crossed2(Price const a_bid_px, Price const a_ask_px) const
+    //    {
+    //    Price undefined;
+    //    static constexpr __m128i negate_ask = _mm_set_ps(0, 0x80000000, 0, 0);
+    //    auto const v_inp = _mm_set_ps(a_bid_px, a_ask_px, undefined, undefined);
+    //    auto const v_neg = _mm_or_ps(v_inp, negate_ask);
+    //    auto const v_cmp = _mm_cmpgt_ps(m_cached_top_markers_sse, v_neg);
+    //    }
+private:
+    struct Side
+    {
+        alignas(sizeof(__m256))
+        std::array<Price,     CAPACITY> sorted_trigger_prices;
+        std::array<ClientOID, CAPACITY> client_order_ids;
+    };
+private:
+    union{
+    __m128   m_cached_top_markers_sse;
+    Price    m_cached_top_markers[2];
+    };
+    uint32_t m_sizes[2] {};
+    Side     m_sides[2] {};
 };
 
 
