@@ -189,7 +189,7 @@ AUTO_TEST_MICROBENCH(profile_parser_p0)
     {
         parser.parse_string_dispatch_message("[266343,[41698,3,-0.7317539]]");
     }
-    std::cout << FormatCcTimingsTable(parser.m_timings, "P0 parse message: '[266343,[41698,3,-0.7317539]'") << "\n";
+    std::cout << format_cc_timings_table(parser.m_timings, "P0 parse message: '[266343,[41698,3,-0.7317539]'") << "\n";
 }
 
 BOOST_AUTO_TEST_SUITE_END()

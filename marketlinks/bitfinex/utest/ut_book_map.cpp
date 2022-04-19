@@ -9,7 +9,7 @@ namespace utf = boost::unit_test;
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 
-// Tests that the book map interates in the correct order, 
+// Tests that the book map interates in the correct order,
 // and that the contents are always sorted during iteration.
 
 BOOST_AUTO_TEST_CASE(book_map_bid, * utf::tolerance(0.00001f))
@@ -56,7 +56,7 @@ BOOST_AUTO_TEST_CASE(book_map_ask, * utf::tolerance(0.00001f))
     BOOST_CHECK_EQUAL(map[32], 3.2f);
     BOOST_CHECK_EQUAL(map[11], 1.1f);
     BOOST_CHECK_EQUAL(map[44], 0.44f);
-    
+
     // Random access, e.g. TOP-of-book index 2 (third best price)
     auto it = map.begin();
     std::advance(it, 2);
@@ -93,7 +93,7 @@ AUTO_TEST_MICROBENCH(book_map_perf)
         timings.push_back(t1 - t0);
     }
 
-    std::cout << FormatCcTimingsTable(timings, "flat_map insert random");
+    std::cout << format_cc_timings_table(timings, "flat_map insert random");
     //  Perf 1,000,000 x flat_map insert random
     //      0.0 % :           52 cc
     //     10.0 % :          128 cc
@@ -105,7 +105,7 @@ AUTO_TEST_MICROBENCH(book_map_perf)
     //     99.8 % :          396 cc
     //     99.9 % :          828 cc
     //    100.0 % :      923,284 cc
-    //    average :          158 cc    
+    //    average :          158 cc
 }
 
 AUTO_TEST_MICROBENCH(std_map_perf)
@@ -131,7 +131,7 @@ AUTO_TEST_MICROBENCH(std_map_perf)
         timings.push_back(t1 - t0);
     }
 
-    std::cout << FormatCcTimingsTable(timings, "std::map insert random");
+    std::cout << format_cc_timings_table(timings, "std::map insert random");
     //  Perf 1,000,000 x std::map insert random
     //      0.0 % :          164 cc
     //     10.0 % :          624 cc

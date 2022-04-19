@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(profile_dense_map, *boost::unit_test::precondition(exec_mic
         timings.push_back(t1 - t0);
     }
 
-    std::cout << FormatCcTimingsTable(timings, "DenseMap lookup hit");
+    std::cout << format_cc_timings_table(timings, "DenseMap lookup hit");
     // Perf 1,000 x DenseMap lookup hit
     //     0.0 % :           50 cc
     //    10.0 % :           52 cc
@@ -172,7 +172,7 @@ BOOST_AUTO_TEST_CASE(profile_unordered_map, *boost::unit_test::precondition(exec
         timings.push_back(t1 - t0);
     }
 
-    std::cout << FormatCcTimingsTable(timings, "std::unordered_map lookup hit");
+    std::cout << format_cc_timings_table(timings, "std::unordered_map lookup hit");
     // Perf 1,000 x std::unordered_map lookup hit
     //     0.0 % :           68 cc
     //    10.0 % :           70 cc
