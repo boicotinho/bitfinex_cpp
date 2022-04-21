@@ -17,7 +17,8 @@ class WsThreadContext // lws_context
 {
 public:
     struct Config;
-    explicit WsThreadContext(Config = Config());
+    explicit WsThreadContext(Config);
+    WsThreadContext() = default;
 
     void service_one(pollfd); // for epoll
     void service_all();       // for spin

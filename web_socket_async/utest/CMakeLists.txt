@@ -6,5 +6,5 @@ add_executable( ${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
-    web_socket_fast
+    web_socket_async
 )

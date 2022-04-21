@@ -1,4 +1,4 @@
-project("web_socket_fast")
+project("web_socket_async")
 
 add_library( ${PROJECT_NAME}
     ws_thread_context.cpp

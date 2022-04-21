@@ -75,5 +75,5 @@ include_directories(SYSTEM .)
 
 add_subdirectory(core)
 add_subdirectory(web_socket_simple)
-add_subdirectory(web_socket_fast)
+add_subdirectory(web_socket_async)
 add_subdirectory(marketlinks)
