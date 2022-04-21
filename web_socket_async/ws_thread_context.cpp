@@ -1,5 +1,6 @@
 #include "ws_thread_context.h"
 #include "core/error.h"
+#include <stdint.h>
 #include <sys/epoll.h>
 #include <sys/poll.h>
 #include <libwebsockets.h>
@@ -64,8 +65,9 @@ struct WsThreadContext::Impl
 
     Millis adjust_timeout_for_next_epoll(Millis const a_max_timeout) const
     {
-        return { lws_service_adjust_timeout(
-            m_lws_context, a_max_timeout.count(), 0) };
+        auto const res = lws_service_adjust_timeout(
+                m_lws_context, a_max_timeout.count(), 0);
+        return Millis(res);
     }
 
 }; // struct WsThreadContext::Impl
