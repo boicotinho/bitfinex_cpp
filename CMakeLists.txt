@@ -68,6 +68,7 @@ add_compile_options(
     -Wno-invalid-offsetof -no-integrated-cpp -fno-strict-aliasing
     -Werror -Werror=return-type
     -fPIC
+    -Wfatal-errors # stop on first error
 )
 
 include_directories(SYSTEM .)
