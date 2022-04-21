@@ -31,5 +31,4 @@ echo "EXTRA_CMAKE_FLAGS: ${EXTRA_CMAKE_FLAGS}"
 
 mkdir -p build_${CFG}
 cd build_${CFG}
-nice cmake -DCMAKE_BUILD_TYPE=${CFG} ${EXTRA_CMAKE_FLAGS} ../
-nice make -j
+clear && nice cmake -DCMAKE_BUILD_TYPE=${CFG} ${EXTRA_CMAKE_FLAGS} ../ && clear && nice make -j
