@@ -61,7 +61,7 @@ int main(int argc, const char** argv)
          << " pool_size: " << pool_size
          << '\n';
 
-    auto const rpc_req = FormatString(
+    auto const rpc_req = format_string(
         R"({"method": "SUBSCRIBE", "params": ["%s"], "id": 1})", subscription);
 
     atomic_int  left_to_start {(int)pool_size};

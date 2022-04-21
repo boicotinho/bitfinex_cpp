@@ -568,7 +568,7 @@ BOOST_AUTO_TEST_CASE(simple_print)
         // Diff. Depth Stream                    : <symbol>@depth         OR <symbol>@depth@100ms
         // very frequent, real time?             : <symbol>@depth@0ms
 
-        auto const rpc_req = FormatString(
+        auto const rpc_req = format_string(
             R"({"method": "SUBSCRIBE", "params": ["btcusdt@trade","btcusdt@bookTicker"], "id": 1})");
 
         ws_client.blk_send_str(rpc_req);

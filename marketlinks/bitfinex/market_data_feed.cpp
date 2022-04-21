@@ -70,7 +70,7 @@ OrderBookPPtr MarketDataFeed::subscribe(
 
 void MarketDataFeed::unsubscribe(channel_tag_t a_chan_id)
 {
-    std::string const rpc_req = FormatString(R"({"event": "unsubscribe", "chanId":%u})",a_chan_id);
+    std::string const rpc_req = format_string(R"({"event": "unsubscribe", "chanId":%u})",a_chan_id);
     m_ws_client.blk_send_str(rpc_req);
 }
 

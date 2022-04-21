@@ -1,17 +1,17 @@
 #include "string_utils.h"
-#include "x_assert.h"
+#include "core/x_assert.h"
 #include <string.h>
 
-std::string FormatString(const char* fmt, ...)
+std::string format_string(const char* fmt, ...)
 {
     va_list vl;
     va_start(vl, fmt);
-    const std::string ret = FormatStringV(fmt, vl);
+    const std::string ret = format_string_v(fmt, vl);
     va_end(vl);
     return ret;
 }
 
-std::string FormatStringV(const char* fmt, va_list vv)
+std::string format_string_v(const char* fmt, va_list vv)
 {
     va_list v2;
     va_copy(v2, vv); // vv will be destroyed after the first call to vsnprintf()
@@ -32,7 +32,7 @@ std::string FormatStringV(const char* fmt, va_list vv)
     return ret;
 }
 
-std::string CommaNum(const int64_t val)
+std::string comma_num(const int64_t val)
 {
     char buf[32];
     char* pp = &buf[sizeof(buf)-1];

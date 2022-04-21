@@ -3,8 +3,7 @@
 #include "core/throttle.h"
 #include <vector>
 #include <stdint.h>
-#include <sys/poll.h> // struct pollfd; // needed by libwebsockets
-
+#include <sys/poll.h> // struct pollfd is needed by libwebsockets
 
 // This manages a set of sockets which are meant to be processed
 // by 1 epoll set running from 1 thread.

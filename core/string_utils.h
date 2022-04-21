@@ -4,7 +4,7 @@
 #include <cstdint>
 #include <cstdarg>
 
-std::string FormatString(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
-std::string FormatStringV(const char* fmt, va_list);
+std::string format_string(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
+std::string format_string_v(const char* fmt, va_list);
 
-std::string CommaNum(const int64_t val); // CommaNum(12345) == "12,345"
+std::string comma_num(const int64_t val); // comma_num(12345) == "12,345"

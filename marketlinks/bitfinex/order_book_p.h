@@ -45,7 +45,7 @@ namespace level_based
         constexpr static TOB Zero() {return {{{0,0},{0,0}}};}
         std::string to_string() const
             {
-            return FormatString("[B x%f $%d | $%d x%f S]",
+            return format_string("[B x%f $%d | $%d x%f S]",
                 bid().total_qty, bid().price_level, ask().price_level, ask().total_qty);
             }
     };
