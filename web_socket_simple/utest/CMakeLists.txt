@@ -19,6 +19,7 @@ target_link_libraries( ${PROJECT_NAME}
                       Threads::Threads
                       OpenSSL::SSL
                       web_socket_simple
+                      core
                       )
 # Temp for tls certificate verification lib
 # target_include_directories( ${PROJECT_NAME} SYSTEM PRIVATE /home/fabio/dev/certify/include/ ${OPENSSL_INCLUDE_DIR} )

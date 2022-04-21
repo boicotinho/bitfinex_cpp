@@ -3,13 +3,8 @@
 #include "core/throttle.h"
 #include <vector>
 #include <stdint.h>
+#include <sys/poll.h> // struct pollfd; // needed by libwebsockets
 
-struct pollfd // needed by libwebsockets
-{
-    int      fd;
-    uint16_t events;
-    uint16_t reserved;
-};
 
 // This manages a set of sockets which are meant to be processed
 // by 1 epoll set running from 1 thread.
@@ -19,10 +14,11 @@ public:
     struct Config;
     explicit WsThreadContext(Config);
     WsThreadContext() = default;
+    ~WsThreadContext();
 
     void service_one(pollfd); // for epoll
     void service_all();       // for spin
-    Millis adjust_timeout_for_next_epoll(Millis); // demanded by libwebsockets
+    Millis adjust_timeout_for_next_epoll(Millis); // required by libwebsockets
 
 public:
     struct Config
