@@ -73,7 +73,7 @@ private:
     Side m_sides[2];
 };
 
-class MarkerTable
+class MarkerTable // for 1 symbol
 {
 public:
     enum { CAPACITY = 256 };
@@ -185,6 +185,7 @@ private:
 
     };
 private:
+    // the web socket
     std::unique_ptr<Cold> m_cold;
 };
 

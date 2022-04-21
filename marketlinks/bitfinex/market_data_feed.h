@@ -4,7 +4,7 @@
 #include "marketlinks/bitfinex/parser.h"
 #include "marketlinks/bitfinex/types.h"
 #include "marketlinks/bitfinex/subscription_cfg.h"
-#include "web_socket/web_socket_client.h"
+#include "web_socket_simple/web_socket_client.h"
 #include "core/dense_map.h"
 #include "core/hashers.h"
 #include "core/gcc_utils.h"

@@ -8,7 +8,6 @@ project("bitfinex")
 #   <boost/test>                boost v. 1.21   https://www.boost.org/doc/libs/1_78_0/libs/test/doc/html/index.html
 #   Redhat 7 usually have 1.53, but boost/beast is an important lib here.
 find_package(Boost 1.66 COMPONENTS)
-find_package(Threads REQUIRED)
 
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.h)
@@ -19,6 +18,6 @@ add_library( ${PROJECT_NAME}
 
 target_include_directories( ${PROJECT_NAME} SYSTEM INTERFACE ../../)
 target_link_libraries(${PROJECT_NAME} LINK_PUBLIC
-    core web_socket marketlinks_common Threads::Threads)
+    core web_socket_simple marketlinks_common)
 
 add_subdirectory(utest)

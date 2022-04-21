@@ -1,5 +1,5 @@
 #include <boost/test/unit_test.hpp>
-#include "web_socket/web_socket_client.h"
+#include "web_socket_simple/web_socket_client.h"
 #include "core/profile_utils.h"
 #include "core/string_utils.h"
 #include "core/profile_utils.h"

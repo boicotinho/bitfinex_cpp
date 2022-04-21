@@ -73,5 +73,6 @@ add_compile_options(
 include_directories(SYSTEM .)
 
 add_subdirectory(core)
-add_subdirectory(web_socket)
+add_subdirectory(web_socket_simple)
+add_subdirectory(web_socket_fast)
 add_subdirectory(marketlinks)

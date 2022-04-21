@@ -1,6 +1,5 @@
 project("core_utest")
 
-find_package(Threads REQUIRED)
 
 file (GLOB SOURCE_FILES *.cpp)
 file (GLOB HEADER_FILES *.h)
@@ -10,6 +9,5 @@ add_executable( ${PROJECT_NAME}
 )
 
 target_link_libraries( ${PROJECT_NAME}
-                      Threads::Threads
                       core
                       )
