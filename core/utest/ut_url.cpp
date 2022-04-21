@@ -1,5 +1,5 @@
 #include <boost/test/unit_test.hpp>
-#include "web_socket_simple/url.h"
+#include "core/url.h"
 
 BOOST_AUTO_TEST_SUITE(wss)
 

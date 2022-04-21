@@ -2,6 +2,10 @@
 #include <chrono>
 #include <iosfwd>
 
+using Nanos  = std::chrono::nanoseconds; // Convenient short name
+using Micros = std::chrono::microseconds;
+using Millis = std::chrono::milliseconds;
+
 constexpr inline std::chrono::seconds      operator "" _s(unsigned long long tt)    {return std::chrono::seconds(tt);}
 constexpr inline std::chrono::milliseconds operator "" _ms(unsigned long long tt)   {return std::chrono::milliseconds(tt);}
 constexpr inline std::chrono::microseconds operator "" _us(unsigned long long tt)   {return std::chrono::microseconds(tt);}
