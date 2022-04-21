@@ -15,9 +15,6 @@
 #include <boost/json/src.hpp>
 using namespace boost::json;
 
-namespace bitfinex
-{
-
 JsonObj::ParseError::ParseError(std::string const& details)
     : std::runtime_error("JsonObj ParseError error; " + details)
 {
@@ -72,13 +69,9 @@ std::string JsonObj::get(std::string const& key) const
     return val;
 }
 
-} // namespace bitfinex
-
 #else // USE_BOOST_JSON
 
 // Very simple dependency-free JSON parser, enough for Bitfinex streams
-namespace bitfinex
-{
 
 enum class eEvent : uint8_t {
     CHAR,           // alphanumeric character
@@ -96,7 +89,7 @@ enum class eEvent : uint8_t {
 // SC: Scanning/Searching for something, looking for its beginning.
 // RD: Reading something. Already started consuming its characters.
 enum class eState : uint8_t {
-    SC_ROOT,        // scanning for root {    
+    SC_ROOT,        // scanning for root {
     SC_KEY,         // scanning for key " start.may find blanks too
     RD_KEY,         // reading key until "
     SC_COLON,       // scanning for :  may find blanks too
@@ -152,7 +145,7 @@ constexpr FsmTransition g_FSM_table [(int)eState::COUNT] [(int)eEvent::COUNT] = 
 #undef __________
 
 // Example of value types which must be accepted:
-// { "event" : "xyz" , "num"    : 131072, "Pi",  : 3.14, "car" : null, 
+// { "event" : "xyz" , "num"    : 131072, "Pi",  : 3.14, "car" : null,
 //   "sale"  : true  , "qwerty" : false,  "cars" : ["Ford", "BMW", "Fiat"],
 //   "platform" : {"status":1}
 // }
@@ -184,13 +177,13 @@ JsonObj::JsonObj(char const* const bgn, char const* const end)
             case '"' : event = eEvent::QUOTE;       break;
             case ':' : event = eEvent::COLON_SEP;   break;
             case ',' : event = eEvent::COMMA;       break;
-            case '\t': 
+            case '\t':
             case ' ' : event = eEvent::WSPC;        break;
             case '{' : event = eEvent::CBRKT_OPEN;  break;
             case '}' : event = eEvent::CBRKT_CLOSE; break;
             case '[' : event = eEvent::SBRKT_OPEN;  break;
             case ']' : event = eEvent::SBRKT_CLOSE; break;
-            default: 
+            default:
                 if(isalnum(*pp) || '.' == *pp ||
                     (eState::RD_VAL_QUO == curr_state && isprint(*pp)))
                 {
@@ -219,7 +212,7 @@ JsonObj::JsonObj(char const* const bgn, char const* const end)
             case eAction::INSERTI   : { insert_into_map(*pp);                   } break;
             case eAction::INSERTN   : { insert_into_map(0);                     } break;
             case eAction::ENT_SUB   : { (*curr_token_ptr) += *pp;  ++sub_obj;   } break;
-            case eAction::LEV_SUB   : { 
+            case eAction::LEV_SUB   : {
                 (*curr_token_ptr) += *pp;
                 if(0 == --sub_obj) { // recursion when value is an embedded object
                     insert_into_map(0);
@@ -255,7 +248,5 @@ JsonObj::ParseError::ParseError(std::string const& details)
     : std::runtime_error("JsonObj ParseError error; " + details)
 {
 }
-
-} // namespace bitfinex
 
 #endif // USE_BOOST_JSON

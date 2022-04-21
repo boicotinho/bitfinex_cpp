@@ -15,7 +15,7 @@ public:
     RestRequest& set(std::string key, double);
     RestRequest& set(std::string key, eKeyword);
 
-    BufDesc get_message() const;
+    StrView get_message() const;
 
     //using response_token = uint32_t;
 };

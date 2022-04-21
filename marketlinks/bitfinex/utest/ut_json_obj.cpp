@@ -3,8 +3,6 @@
 
 BOOST_AUTO_TEST_SUITE(bitfinex)
 
-using bitfinex::JsonObj;
-
 BOOST_AUTO_TEST_CASE(json_obj_parse_empty)
 {
     JsonObj obj(R"({})");

@@ -1,6 +1,6 @@
 #pragma once
 #include "marketlinks/common/types.h"
-#include "marketlinks/common/json_obk.h"
+#include "marketlinks/common/json_obj.h"
 #include "marketlinks/common/rest_request.h"
 #include "marketlinks/common/arb_ptr.h"
 #include "core/str_view.h"
@@ -90,17 +90,17 @@ public:
         bool const ask_ok = a_ask_px <= m_cached_top_markers[eSide::ASK];
         if(bid_ok & ask_ok)
             return {};
-        enum { NUM_SCALARS = sizeof(v_bid)/sizeof(Price) };
+        enum { NUM_SCALARS = sizeof(__m256)/sizeof(Price) };
         CrossCount res {};
         {
             auto const v_px = _mm256_set1_ps(a_bid_px);
             Price const* const p_bgn =
-                (Price const*) m_sides[eSide::BID].sorted_trigger_prices;
-            Price const* const p_end = p_src + m_sizes[eSide::BID];
+                (Price const*) m_sides[eSide::BID].sorted_trigger_prices.data();
+            Price const* const p_end = p_bgn + m_sizes[eSide::BID];
             auto pp = p_bgn;
             do
             {
-                auto const byte_mask = _mm256_cmplt_ps(*pp, v_px);
+                auto const byte_mask = _mm256_cmp_ps(*(__m256*)pp, v_px, _CMP_NLT_UQ);
                 auto const bit_mask = _mm256_movemask_ps(byte_mask);
                 if(bit_mask)
                 {
@@ -114,12 +114,12 @@ public:
         {
             auto const v_px = _mm256_set1_ps(a_ask_px);
             Price const* const p_bgn =
-                (Price const*) m_sides[eSide::ASK].sorted_trigger_prices;
-            Price const* const p_end = p_src + m_sizes[eSide::ASK];
+                (Price const*) m_sides[eSide::ASK].sorted_trigger_prices.data();
+            Price const* const p_end = p_bgn + m_sizes[eSide::ASK];
             auto pp = p_bgn;
             do
             {
-                auto const byte_mask = _mm256_cmpgt_ps(*pp, v_px);
+                auto const byte_mask = _mm256_cmp_ps(*(__m256*)pp, v_px, _CMP_NLT_UQ);
                 auto const bit_mask = _mm256_movemask_ps(byte_mask);
                 if(bit_mask)
                 {

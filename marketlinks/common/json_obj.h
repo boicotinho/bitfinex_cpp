@@ -3,8 +3,6 @@
 #include <stdexcept>
 #include <map>
 
-namespace bitfinex
-{
 // A slow but simple and minimal representation of
 // JSON objects given their JSON string representation.
 // Just enough to parse the incoming market data events (except order book entries)
@@ -28,5 +26,3 @@ public:
         explicit ParseError(std::string const& details="");
         };
 };
-
-} // namespace bitfinex

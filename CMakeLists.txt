@@ -55,6 +55,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/extern/libwebsockets/include) # 
 ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 
 set(CMAKE_CXX_STANDARD 11)
+#set(CMAKE_USE_RELATIVE_PATHS OFF)
 
 #-march=native -mtune=native # core-avx2
 # Compile settings which potentially changes the ABI

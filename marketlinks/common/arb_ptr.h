@@ -23,7 +23,7 @@ struct ArbPtr
     bool atomic_update_if_newer(TimeT const a_version, ValueT* const a_ptr)
     {
         static_assert(sizeof(ArbPtr) == 16,
-            "Please check ArbPtr for atomic 128 CAS")
+            "Please check ArbPtr for atomic 128 CAS");
         auto vv = m_ver;
         if(!Compare()(a_version, vv))
             return false;
@@ -38,7 +38,7 @@ struct ArbPtr
     ValueT const* operator->() const {return m_ptr;}
 
     ValueT& operator*() {return *m_ptr;}
-    ValueT const& operator->() const {return *m_ptr;}
+    ValueT const& operator*() const {return *m_ptr;}
 
     constexpr explicit operator bool() const {return !!m_ptr;}
 
