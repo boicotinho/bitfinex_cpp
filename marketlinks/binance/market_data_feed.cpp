@@ -14,4 +14,9 @@ void MarketDataFeed::on_ticker( UpdateId    a_update_id // mono incr, with gaps
 
 }
 
+size_t MarketDataFeed::on_recv(StrView)
+{
+    return 0;
+}
+
 } // namespace binance

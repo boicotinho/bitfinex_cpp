@@ -6,7 +6,7 @@
 #include <iosfwd>
 #include <stdint.h>
 
-template<class T>
+template<class TVal>
 using EnableIfIntegral =
     typename std::enable_if< std::is_integral<TVal>::value >::type*;
 
@@ -20,7 +20,13 @@ public:
     void save(std::ostream&);
 
     template<class TVal>
-    TVal get(key_t a_key);
+    TVal get(key_t a_key)
+        {
+        TVal res;
+        if(!try_get(a_key, res))
+            throw Error(a_key);
+        return res;
+        }
 
     bool try_get(key_t, std::string&) const noexcept;
     bool try_get(key_t, int64_t&) const noexcept;
@@ -30,7 +36,16 @@ public:
     bool try_get(key_t, std::chrono::nanoseconds&) const noexcept;
 
     template<class TVal>
-    bool try_get(key_t a_key, TVal& a_val, EnableIfIntegral<TVal> = 0) noexcept;
+    bool try_get( key_t a_key
+                , TVal& a_val
+                , EnableIfIntegral<TVal> = 0) const noexcept
+                {
+                int64_t tmp;
+                if(!try_get(a_key, tmp))
+                    return false;
+                a_val = tmp;
+                return true;
+                }
 
     bool has_key(key_t) const noexcept;
 
@@ -54,28 +69,3 @@ public:
         { int64_t val = a_val; set(a_key, val); }
 private:
 };
-
-//==============================================================================
-
-template<class TVal>
-bool Config::try_get<TVal>(
-        key_t a_key,
-        TVal& a_val,
-        EnableIfIntegral<TVal> = 0
-    ) noexcept
-{
-    int64_t tmp;
-    if(!try_get(a_key, tmp))
-        return false;
-    a_val = tmp;
-    return true;
-}
-
-template<class TVal>
-TVal Config::get<TVal>(key_t a_key)
-{
-    TVal res;
-    if(!try_get(a_key, res))
-        throw Error(a_key);
-    return res;
-}

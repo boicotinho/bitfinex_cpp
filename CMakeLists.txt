@@ -54,6 +54,9 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/extern/libwebsockets/include) # 
 
 ADD_DEFINITIONS(-DBUILD_TYPE=\"${CMAKE_BUILD_TYPE}\")
 
+add_compile_options("$<$<CONFIG:DEBUG>:-O0;-g3;-ggdb;-D_DEBUG;-DVALIDATE>")
+add_compile_options("$<$<CONFIG:RELWITHDEBINFO>:-DPROFILE>")
+
 set(CMAKE_CXX_STANDARD 11)
 #set(CMAKE_USE_RELATIVE_PATHS OFF)
 
@@ -63,12 +66,13 @@ set(CMAKE_CXX_STANDARD 11)
 # anything ABI-sensitive should be wrapped by pImpl pattern.
 add_compile_options(
     -Wall -Wextra -Wpedantic -Werror
-    -Wdeprecated -W -Wpointer-arith -Wno-uninitialized -Wno-unused
+    -W -Wpointer-arith -Wno-uninitialized -Wno-unused
     -Wno-sign-compare -Wno-comment -Wno-unknown-pragmas -Wno-unused-parameter
     -Wno-invalid-offsetof -no-integrated-cpp -fno-strict-aliasing
     -Werror -Werror=return-type
+    -Wdeprecated
     -fPIC
-    -Wfatal-errors # stop on first error
+    # -Wfatal-errors # stop on first error
 )
 
 include_directories(SYSTEM .)
@@ -77,3 +81,5 @@ add_subdirectory(core)
 add_subdirectory(web_socket_simple)
 add_subdirectory(web_socket_async)
 add_subdirectory(marketlinks)
+add_subdirectory(server_engine
+)

@@ -377,6 +377,7 @@ BOOST_AUTO_TEST_CASE(with_websockets_wolfssl)
     // connect
     static lws_context *context = lws_create_context(&ws_thread_context_config);
     BOOST_REQUIRE_MESSAGE(context, "lws_create_context failed");
+    // foreign_loops[0] = nullptr; // seems like we don't need the array after lws_create_context()
 
     auto on_connect_client = [](lws_sorted_usec_list_t *sul)
     {

@@ -6,9 +6,10 @@
 #include <algorithm>
 #include <sstream>
 
-std::string format_cc_timings_table( std::vector<CpuTimeStamp> const& a_perf
-                                   , std::string               const& a_title
-                                   )
+std::string format_cc_timings_table(
+                std::vector<CpuClock::time_point> const& a_perf,
+                std::string                       const& a_title
+                )
 {
     std::stringstream ss;
     auto perf = a_perf;
@@ -20,7 +21,7 @@ std::string format_cc_timings_table( std::vector<CpuTimeStamp> const& a_perf
     auto qtl = [&](double x) -> CpuTimeStamp
     {
         size_t ix = (double)perf.size() * x;
-        if(ix>= perf.size())
+        if(ix >= perf.size())
             ix = perf.size()-1;
         return perf[ix];
     };

@@ -37,6 +37,7 @@ FORCE_INLINE void fast_parse(
     res = tmp;
 }
 
+// Just a placeholder for now -> TODO: improve
 //=================================================================================================
 FORCE_INLINE void fast_parse(
     char const*&        pp,

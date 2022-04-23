@@ -3,7 +3,10 @@
 #include "marketlinks/common/json_obj.h"
 #include "marketlinks/common/rest_request.h"
 #include "marketlinks/common/arb_ptr.h"
+#include "web_socket_async/ws_client.h"
+#include "core/i_service.h"
 #include "core/str_view.h"
+#include "core/cold_data.h"
 #include <memory>
 #include <stdint.h>
 #include <x86intrin.h>
@@ -163,7 +166,10 @@ private:
 // 1 book per symbol,
 // 1..3 streams per symbol (ticker, depth, trades)
 class MarketDataFeed
-    : private Parser
+    : public  WsClient::ICallback
+    , private Parser
+ //   , public IService
+
 {
 public:
     void subscribe();
@@ -171,7 +177,10 @@ public:
 public:
     void send_request(RestRequest const&);
 
-private:
+private: // WsClient::ICallback
+    virtual size_t on_recv(StrView) override;
+
+private: // Parser
     virtual void on_ticker( UpdateId    a_update_id // mono incr, with gaps
                           , Price       a_bid_px
                           , Quantity    a_bid_qx
@@ -179,15 +188,23 @@ private:
                           , Quantity    a_ask_qx
                           , StrView     a_symbol
                           ) override;
+
 private:
     struct Cold
     {
 
+
     };
 private:
-    // the web socket
-    std::unique_ptr<Cold> m_cold;
+    WsClient m_web_socket;
 };
+
+
+//private: // IService
+//    virtual Caps get_caps() const override {return Caps();}
+//    virtual void on_start(WorkerThread* parent) override {}
+//    virtual void on_stop(WorkerThread* parent) override {}
+//    virtual void on_spin_exec() override {}
 
 class BookMultiplexer
 {

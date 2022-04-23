@@ -4,15 +4,16 @@
 
 struct TscPair
 {
-    using Clock = std::chrono::high_resolution_clock;
-    CpuTimeStamp        cc {};
-    Clock::time_point   ns {};
+    using SysClock = std::chrono::high_resolution_clock;
+
+    CpuClock::time_point cc {};
+    SysClock::time_point ns {};
     static TscPair now()
         {
         TscPair res;
         uint32_t aux;
         res.cc = __rdtscp(&aux);
-        res.ns = Clock::now();
+        res.ns = SysClock::now();
         COMPILER_BARRIER();
         return res;
         }

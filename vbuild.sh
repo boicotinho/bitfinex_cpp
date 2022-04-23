@@ -2,7 +2,9 @@
 CFG=${1:-Release}
 echo "Build configuration: ${CFG}"
 
-EXTRA_CMAKE_FLAGS=""
+EXTRA_CMAKE_FLAGS+=""
+GNUMAKE_FLAGS+=" -j"
+#GNUMAKE_FLAGS+=" VERBOSE=1 -j1"
 
 if [[ ! -z "${USE_ICC}" ]]; then
     ICC_ROOT="/opt/intel/compilers_and_libraries_2019.1.144/linux/bin/intel64"
@@ -31,4 +33,4 @@ echo "EXTRA_CMAKE_FLAGS: ${EXTRA_CMAKE_FLAGS}"
 
 mkdir -p build_${CFG}
 cd build_${CFG}
-clear && nice cmake -DCMAKE_BUILD_TYPE=${CFG} ${EXTRA_CMAKE_FLAGS} ../ && clear && nice make -j
+clear && nice cmake -DCMAKE_BUILD_TYPE=${CFG} ${EXTRA_CMAKE_FLAGS} ../ && clear && nice make ${GNUMAKE_FLAGS}

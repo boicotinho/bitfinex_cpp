@@ -3,6 +3,7 @@ project("web_socket_async")
 add_library( ${PROJECT_NAME}
     ws_thread_context.cpp
     ws_client.cpp
+    lws_custom.cpp
 )
 
 target_link_libraries( ${PROJECT_NAME}

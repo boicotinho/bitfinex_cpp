@@ -1,29 +1,11 @@
 #include "ws_thread_context.h"
+#include "lws_custom.h"
 #include "core/error.h"
 #include <stdint.h>
-#include <sys/epoll.h>
-#include <sys/poll.h>
 #include <libwebsockets.h>
 
 namespace
 {
-
-// TODO: promote to core
-struct EpollSet
-{
-    int         m_epoll_fd {-1};
-    epoll_event ep_events[64];
-};
-
-// We just tell LWS the size of our struct and it will manage the storage.
-struct LwsCustomEventLib// pt_eventlibs_custom
-{
-    EpollSet *io_loop;
-    // TODO: Needed by LWS. If EpollSet is to do poll() as well, move this there
-    lws_pollfd  pollfds[64];
-    int         count_pollfds;
-};
-
 } // anon namespace
 
 
@@ -33,14 +15,15 @@ struct WsThreadContext::Impl
 
     static lws_context* create_from_config(WsThreadContext::Config const& a_cfg)
     {
-        lws_context_creation_info cfg {};
+        lws_context_creation_info lw_cfg {};
 
         // Hook in support for our epoll-based event loop
-        //void* foreign_loops[1] = {&g_epoll_set};
-        cfg.foreign_loops = nullptr; // FIXME:
+        void* tmp_foreign_loops[1] = {a_cfg.epoll_set};
+        lw_cfg.foreign_loops = tmp_foreign_loops;
+        lw_cfg.event_lib_custom = &LwsCustom::get_vtable_plugin();
 
         // TODO: translate config
-        return lws_create_context(&cfg);
+        return lws_create_context(&lw_cfg);
     }
 
     explicit Impl(WsThreadContext::Config const& a_cfg)
@@ -75,25 +58,26 @@ struct WsThreadContext::Impl
 //==============================================================================
 
 WsThreadContext::WsThreadContext(Config const a_cfg)
-    : m_impl(*new Impl(a_cfg))
+    : m_impl(new Impl(a_cfg))
 { }
 
 WsThreadContext::~WsThreadContext()
 {
-    delete &m_impl;
+    if(m_impl)
+        delete m_impl;
 }
 
 void WsThreadContext::service_one(pollfd a_pfd)
 {
-    return m_impl.service_one(a_pfd);
+    return m_impl->service_one(a_pfd);
 }
 
 void WsThreadContext::service_all()
 {
-    return m_impl.service_all();
+    return m_impl->service_all();
 }
 
 Millis WsThreadContext::adjust_timeout_for_next_epoll(Millis a_tmo)
 {
-    return m_impl.adjust_timeout_for_next_epoll(a_tmo);
+    return m_impl->adjust_timeout_for_next_epoll(a_tmo);
 }

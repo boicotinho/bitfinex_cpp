@@ -11,7 +11,9 @@ public:
     class Limit;
     explicit Throttle(Limit);
 
-    bool can_send(CpuTimeStamp const a_now = fast_now())
+    using Clock = CpuClock;
+
+    bool can_send(Clock::time_point const a_now = Clock::now())
     {
         if(UNLIKELY(a_now < m_next_send))
             return false;
@@ -37,6 +39,6 @@ public:
 private:
     // could queue the send times for a more tight rolling window,
     // but would uses more data.
-    CpuTimeStamp m_next_send {};
-    ClockCycles  m_msg_interval {};
+    Clock::time_point m_next_send {};
+    Clock::duration   m_msg_interval {};
 };

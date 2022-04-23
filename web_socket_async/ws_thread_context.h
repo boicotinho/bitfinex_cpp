@@ -1,7 +1,9 @@
 #pragma once
 #include "core/time_util.h"
 #include "core/throttle.h"
+#include "core/epoll_set.h"
 #include <vector>
+#include <utility>
 #include <stdint.h>
 #include <sys/poll.h> // struct pollfd is needed by libwebsockets
 
@@ -10,18 +12,9 @@
 class WsThreadContext // lws_context
 {
 public:
-    struct Config;
-    explicit WsThreadContext(Config);
-    WsThreadContext() = default;
-    ~WsThreadContext();
-
-    void service_one(pollfd); // for epoll
-    void service_all();       // for spin
-    Millis adjust_timeout_for_next_epoll(Millis); // required by libwebsockets
-
-public:
     struct Config
     {
+        EpollSet*           epoll_set               {nullptr};
         Throttle::Limit     send_throttle_limit     {10, 1_s};
         size_t              max_sockets_per_thread  {1024};
         Millis              heartbeat_interval      {1_mins}; // a.k.a. ping
@@ -30,10 +23,23 @@ public:
         std::vector<Micros> conn_conceal_table      {conn_backoff_table};
     };
 
+    void service_one(pollfd); // for epoll
+    void service_all();       // for spin
+    Millis adjust_timeout_for_next_epoll(Millis); // required by libwebsockets
+
+    WsThreadContext() = default;
+    explicit WsThreadContext(Config);
+    WsThreadContext(WsThreadContext&& other) {swp(other);}
+    WsThreadContext& operator=(WsThreadContext&& other) {return swp(other);}
+    ~WsThreadContext();
+    explicit operator bool() const {return !!m_impl;}
+
 private:
     friend class WsClient;
     struct Impl;
+    WsThreadContext& swp(WsThreadContext& other)
+        {std::swap(m_impl, other.m_impl); return *this;}
 
 private:
-    Impl& m_impl;
+    Impl* m_impl {};
 };

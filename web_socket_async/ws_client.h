@@ -16,14 +16,14 @@ public:
     {
         // User must return the number of bytes consumed.
         // Unconsumed data will be repeated in next callback invocation.
-        size_t on_recv(StrView);
+        virtual size_t on_recv(StrView) = 0;
 
         // Reported when we get disconnected but still have some attemts left.
-        void on_connection_unstable();
+        virtual void on_connection_unstable() {}
 
         // Called when either socket failed to connect the first time, or later
         // during the day after failing 3 retries (depending on configuration).
-        void on_connection_closed();
+        virtual void on_connection_closed() {}
     };
     using ICallbackPtr = std::shared_ptr<ICallback>;
 

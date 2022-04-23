@@ -4,10 +4,25 @@
 #include <stdint.h>
 #include <x86intrin.h>
 
-using CpuTimeStamp = uint64_t;
-using ClockCycles  = int64_t;
+struct CpuClock // TODO: would be nice to support chrono casting
+{
+    using time_point = uint64_t; // TODO: class so we can ostream <<, converting to seconds/ms
+    using duration   = int64_t;
+    static FORCE_INLINE time_point now() { return __rdtsc(); } // 1ns
 
-FORCE_INLINE CpuTimeStamp fast_now() { return __rdtsc(); }
+    static FORCE_INLINE time_point now2() // 9ns but avoids out-of-order exec
+        {
+        uint32_t aux;
+        COMPILER_BARRIER();
+        uint64_t res = __rdtscp(&aux);
+        COMPILER_BARRIER();
+        return res;
+        }
+};
+
+using CpuTimeStamp = CpuClock::time_point;
+using ClockCycles  = CpuClock::duration;
+
 
 double ns_to_cc_factor();
 double cc_to_ns_factor();
